@@ -29,6 +29,12 @@ Most endpoints require a Matcha token:
   - `POST /api/matcha/register/confirm` (finish two-step registration)
   - `POST /api/matcha/login` (login)
 
+Optional (authservers):
+
+- Matcha also supports a per-user **API token** (prefix `AM:`) for trusted authservers.
+- API tokens are opt-in and are only returned when requested via `getApiToken: true`.
+- When requested, the API token is rotated (one active token per user).
+
 Common auth failures:
 
 - `401` `{ ok: false, error: "Missing token" }`
@@ -47,6 +53,7 @@ Common auth failures:
 
 1. Register (recommended: two-step “Secure Key” flow) or login.
 2. Store token securely.
+   - If you request an authserver API token (`apiToken`), store it even more carefully (treat it like a password).
 3. Fetch the current user: `GET /api/matcha/me`.
 4. Open WebSocket and authenticate immediately: `{ "type": "auth", "token": "..." }`.
 5. Pull friend state:
@@ -64,4 +71,8 @@ Common auth failures:
 
 - Rate limits exist. If you receive `429`, back off and show “slow down”.
 - Avatar caching: fetch `GET /api/matcha/avatar/<userId>?v=<avatarHash>` to bust caches when `avatarHash` changes.
+
+## Terms of Service
+
+- Public ToS endpoint (if enabled on the server): `GET /api/matcha/tos`
 

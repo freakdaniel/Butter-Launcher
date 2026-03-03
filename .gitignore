@@ -29,7 +29,8 @@ tools/pwr_patches/
 *.sln
 *.sw?
 .env.local
-
+butter-server-better.js
+matcha_authservers.json
 # Optional local extensions (custom environments)
 dynamic_modules/
 

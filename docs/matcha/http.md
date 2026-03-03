@@ -29,9 +29,15 @@ Two modes are supported:
 {
   "username": "MyName",
   "password": "a-strong-password",
-  "password2": "a-strong-password"
+  "password2": "a-strong-password",
+  "getApiToken": false
 }
 ```
+
+Notes:
+
+- `getApiToken` is optional. If `true`, the response also returns an **authserver API token** (`apiToken`, prefix `AM:`).
+- This is **opt-in** and does not change the normal login flow for existing clients.
 
 #### Response (immediate)
 
@@ -39,11 +45,16 @@ Two modes are supported:
 {
   "ok": true,
   "token": "<matcha_jwt>",
+  "apiToken": "AM:...",
   "user": { "id": "...", "handle": "MyName#1234", "role": "user" },
   "masterKey": "BM:...",
   "proofId": "BM:..."
 }
 ```
+
+Notes:
+
+- `apiToken` is only present if you requested it (`getApiToken: true`).
 
 Notes:
 
@@ -92,9 +103,14 @@ Complete a deferred registration (create the account).
 ```json
 {
   "pendingId": "<24hex>",
-  "proofId": "BM:..."
+  "proofId": "BM:...",
+  "getApiToken": false
 }
 ```
+
+Notes:
+
+- `getApiToken` is optional. If `true`, the response also returns an `apiToken`.
 
 Aliases:
 
@@ -106,9 +122,14 @@ Aliases:
 {
   "ok": true,
   "token": "<matcha_jwt>",
+  "apiToken": "AM:...",
   "user": { "id": "...", "handle": "MyName#1234", "role": "user" }
 }
 ```
+
+Notes:
+
+- `apiToken` is only present if you requested it (`getApiToken: true`).
 
 Notes:
 
@@ -130,8 +151,14 @@ Log in with a handle + password.
 #### Request
 
 ```json
-{ "handle": "MyName#1234", "password": "..." }
+{ "handle": "MyName#1234", "password": "...", "getApiToken": false }
 ```
+
+Notes:
+
+- `getApiToken` is optional. If `true`, the response also returns an `apiToken`.
+- `password` normally contains the account password.
+- For trusted authservers, `password` may also be an **API token** (`AM:...`). This is supported but not recommended for human logins.
 
 Fallback:
 
@@ -143,9 +170,115 @@ Fallback:
 {
   "ok": true,
   "token": "<matcha_jwt>",
+  "apiToken": "AM:...",
   "user": { "id": "...", "handle": "MyName#1234", "role": "user" }
 }
 ```
+
+Notes:
+
+- `apiToken` is only present if you requested it (`getApiToken: true`).
+
+---
+
+## Authserver API tokens (optional)
+
+Matcha supports an optional **per-user API token** meant for trusted authservers.
+
+Properties:
+
+- Prefix: `AM:`
+- Exactly **one active API token per user**.
+- When you request an API token (`getApiToken: true`), the token is **rotated** (previous token becomes invalid).
+
+### GET /api/matcha/authservers/validate
+
+Validate an API token.
+
+Headers:
+
+- `Authorization: Bearer <apiToken>`
+
+Response:
+
+- `204 No Content` if valid
+- `401` if invalid
+
+### POST /api/matcha/authservers/login
+
+Exchange an API token for a normal Matcha JWT.
+
+Headers:
+
+- `Authorization: Bearer <apiToken>`
+
+Body (optional):
+
+```json
+{ "handle": "MyName#1234" }
+```
+
+Response:
+
+```json
+{ "ok": true, "token": "<matcha_jwt>", "user": { "id": "...", "handle": "MyName#1234", "role": "user" } }
+```
+
+Notes:
+
+- If `handle` is provided, it must match the user bound to the API token.
+
+### POST /api/matcha/authservers/invalidate
+
+Invalidate (revoke) the current API token.
+
+Headers:
+
+- `Authorization: Bearer <apiToken>`
+
+Response:
+
+- `204 No Content` if revoked
+- `401` if invalid
+
+---
+
+## Terms of Service
+
+### GET /api/matcha/tos
+
+Public endpoint to fetch the server-configured Matcha Terms of Service.
+
+Response:
+
+```json
+{
+  "ok": true,
+  "terms": {
+    "title": "Matcha! System — Terms of Service",
+    "lastUpdated": "Last Updated: ...",
+    "body": "..."
+  },
+  "tos": "...",
+  "updatedAt": "..."
+}
+```
+
+Notes:
+
+- `tos` is a backward-compatible alias of `terms.body`.
+
+---
+
+## Server configuration notes (self-host)
+
+### Authserver rate-limit bypass
+
+Self-hosted servers can optionally bypass the Matcha register IP limit for trusted authserver IPs.
+
+- Configure via `matcha_authservers.json` (recommended)
+- Or legacy env var `MATCHA_AUTHSERVERS_IPS` (comma-separated), which overrides the JSON.
+  - For backward compatibility, `MATCHA_AUTHSERVER_IPS` is also accepted.
 
 Bans:
 
