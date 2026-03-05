@@ -29,14 +29,10 @@ import { sortDiscoverInstalledFirst, formatModsError } from "../features/mods/mo
 
 // Types imported from features/mods/modsTypes.ts
 
-const ModsModal: React.FC<{
-  open: boolean;
-  onClose: () => void;
-}> = ({ open, onClose }) => {
+const ModsModal: React.FC = () => {
   const { gameDir, availableVersions, selectedVersion, versionType } =
     useGameContext();
   const { t } = useTranslation();
-  const [closing, setClosing] = useState(false);
 
   const scrollRootRef = useRef<HTMLDivElement | null>(null);
   const discoverLoadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -177,13 +173,6 @@ const ModsModal: React.FC<{
     resolve?: (v: boolean) => void;
   }>({ open: false, title: "", message: "" });
 
-  const close = () => {
-    setClosing(true);
-    setTimeout(() => {
-      setClosing(false);
-      onClose();
-    }, 160);
-  };
 
   const openImageViewer = (src: string, alt?: string) => {
     const s = typeof src === "string" ? src.trim() : "";
@@ -269,7 +258,6 @@ const ModsModal: React.FC<{
 
   // Infinite scroll for Discover: auto-load more when reaching the bottom.
   useEffect(() => {
-    if (!open) return;
     if (tab !== "discover") return;
     if (detailsId != null) return;
     if (!hasMore) return;
@@ -313,7 +301,7 @@ const ModsModal: React.FC<{
         // ignore
       }
     };
-  }, [open, tab, detailsId, hasMore, discoverLoading, query, sort]);
+  }, [tab, detailsId, hasMore, discoverLoading, query, sort]);
 
   useEffect(() => {
     if (sort !== "installedFirst") return;
@@ -542,7 +530,6 @@ const ModsModal: React.FC<{
   };
 
   useEffect(() => {
-    if (!open) return;
 
     const onProgress = (_: any, payload: any) => {
       const id = Number(payload?.modId);
@@ -584,7 +571,7 @@ const ModsModal: React.FC<{
       window.ipcRenderer.off("mods:download-finished", onFinished);
       window.ipcRenderer.off("mods:download-error", onError);
     };
-  }, [open, tab]);
+  }, [tab]);
 
   useEffect(() => {
     if (!imageViewer.open) return;
@@ -597,7 +584,6 @@ const ModsModal: React.FC<{
   }, [imageViewer.open]);
 
   useEffect(() => {
-    if (!open) return;
     // Initial load
     setDetailsId(null);
     setDetailsError("");
@@ -635,14 +621,13 @@ const ModsModal: React.FC<{
     setRenameProfilePrompt({ open: false, oldName: "" });
     setRenameProfileInput("");
     setRenameProfileError("");
-  }, [open]);
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
     if (tab === "profiles") {
       void loadProfiles();
     }
-  }, [open, tab]);
+  }, [tab]);
 
   const installedByBase = useMemo(() => {
     const map = new Map<string, { enabled: boolean; fileNames: string[] }>();
@@ -780,7 +765,6 @@ const ModsModal: React.FC<{
   }, [profiles, selectedProfileName]);
 
   useEffect(() => {
-    if (!open) return;
     if (!selectedProfileName) {
       setProfileSelectedMods(new Set());
       return;
@@ -838,19 +822,13 @@ const ModsModal: React.FC<{
     }
   };
 
-  if (!open && !closing) return null;
 
   return (
     <Box
-      position="fixed"
-      inset={0}
-      zIndex={50}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      bg="rgba(10,14,26,0.85)"
-      backdropFilter="blur(12px)"
-      style={{ animation: "fadeIn 0.18s ease" }}
+      position="relative"
+      w="full"
+      h="full"
+      overflow="hidden"
     >
       {imageViewer.open
         ? createPortal(
@@ -960,45 +938,17 @@ const ModsModal: React.FC<{
 
       <Box
         position="relative"
-        w="92vw"
-        maxW="2200px"
-        h="88vh"
-        mx="auto"
+        w="full"
+        h="full"
         rounded="xl"
         bgGradient="to-b"
         gradientFrom="rgba(27,32,48,0.95)"
         gradientTo="rgba(20,24,36,0.95)"
-        border="1px solid"
-        borderColor="#2a3146"
-        shadow="2xl"
         px={10}
         py={6}
         display="flex"
         flexDir="column"
-        style={{ animation: closing ? "settingsOut 0.16s ease forwards" : "settingsIn 0.2s ease" }}
       >
-        <Box
-          as="button"
-          position="absolute"
-          top={3}
-          right={3}
-          w={8}
-          h={8}
-          rounded="full"
-          bg="#23293a"
-          color="gray.400"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          cursor="pointer"
-          _hover={{ color: "white", bg: "#2f3650" }}
-          transition="all 0.15s"
-          onClick={close}
-          title={t("common.close")}
-        >
-          <IconX size={18} />
-        </Box>
-
         <HStack justify="space-between" gap={3} mb={4} pr={12}>
           <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide">
             {t("modsModal.title")}

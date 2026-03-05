@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { IconFolderOpen, IconX } from "@tabler/icons-react";
+import ReactCountryFlag from "react-country-flag";
+import { IconFolderOpen, IconChevronRight, IconChevronLeft } from "@tabler/icons-react";
 import { useGameContext } from "../hooks/gameContext";
 import ConfirmModal from "./ConfirmModal";
 import { useTranslation } from "react-i18next";
@@ -11,28 +12,66 @@ import {
   HStack,
   IconButton,
   Input,
-  SimpleGrid,
   Switch,
   Text,
   VStack,
 } from "@chakra-ui/react";
 
 const LANGUAGES = {
-  en: { name: "English", flag: "🇺🇸" },
-  es: { name: "Español", flag: "🇪🇸" },
-  cs: { name: "Čeština", flag: "🇨🇿" },
-  ar: { name: "العربية", flag: "🇸🇦" },
-  ru: { name: "Русский", flag: "🇷🇺" },
-  de: { name: "Deutsch", flag: "🇩🇪" },
+  en: { name: "English", countryCode: "US" },
+  es: { name: "Español", countryCode: "ES" },
+  cs: { name: "Čeština", countryCode: "CZ" },
+  ar: { name: "العربية", countryCode: "SA" },
+  ru: { name: "Русский", countryCode: "RU" },
+  de: { name: "Deutsch", countryCode: "DE" },
 } as const;
 
 const RTL_LANGUAGES = ["ar"] as const;
 
+// Flat list row matching Yandex Music style
+const SettingRow: React.FC<{
+  label: string;
+  hint?: string;
+  onClick?: () => void;
+  right?: React.ReactNode;
+  disabled?: boolean;
+  danger?: boolean;
+  noBorder?: boolean;
+}> = ({ label, hint, onClick, right, disabled, danger, noBorder }) => (
+  <HStack
+    py={4}
+    px={3}
+    justify="space-between"
+    align="center"
+    borderBottom={noBorder ? "none" : "1px solid"}
+    borderColor="rgba(255,255,255,0.06)"
+    cursor={onClick && !disabled ? "pointer" : "default"}
+    opacity={disabled ? 0.4 : 1}
+    transition="background 0.12s"
+    borderRadius="md"
+    _hover={onClick && !disabled ? { bg: "rgba(255,255,255,0.04)" } : {}}
+    onClick={onClick && !disabled ? onClick : undefined}
+  >
+    <Box flex={1} minW={0}>
+      <Text fontSize="15px" fontWeight="500" lineHeight="1.4" color={danger ? "#f87171" : "rgba(255,255,255,0.92)"}>
+        {label}
+      </Text>
+      {hint && (
+        <Text fontSize="12px" lineHeight="1.5" color="rgba(255,255,255,0.38)" mt={1} wordBreak="break-all">
+          {hint}
+        </Text>
+      )}
+    </Box>
+    {right !== undefined && (
+      <Box flexShrink={0} ml={4}>{right}</Box>
+    )}
+  </HStack>
+);
+
 const SettingsModal: React.FC<{
-  open: boolean;
-  onClose: () => void;
   onLogout?: () => void;
-}> = ({ open, onClose, onLogout }) => {
+  onBack?: () => void;
+}> = ({ onLogout, onBack }) => {
   const { t, i18n } = useTranslation();
 
   const readEnableRpcPref = (): boolean => StorageService.isRPCEnabled();
@@ -62,9 +101,9 @@ const SettingsModal: React.FC<{
   const [steamDeckMode, setSteamDeckMode] = useState(false);
   const [steamDeckWorking, setSteamDeckWorking] = useState(false);
   const [steamDeckStatus, setSteamDeckStatus] = useState<string>("");
-  const [creditsOpen, setCreditsOpen] = useState(false);
+  const [creditsSubPage, setCreditsSubPage] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [defaultGameDir, setDefaultGameDir] = useState<string>("");
 
   const normalizedUUID = useMemo(() => {
     const raw = customUUID.trim();
@@ -105,7 +144,6 @@ const SettingsModal: React.FC<{
   };
 
   useEffect(() => {
-    if (!open) return;
     setCustomUUID(StorageService.getString("customUUID"));
     setEnableRPC(readEnableRpcPref());
     void (async () => {
@@ -117,22 +155,22 @@ const SettingsModal: React.FC<{
     (async () => {
       try { const enabled = await window.config.getSteamDeckMode(); setSteamDeckMode(enabled); setSteamDeckStatus(""); } catch {}
     })();
+    void (async () => {
+      try { const d = await window.config.getDefaultGameDirectory(); setDefaultGameDir(d || ""); } catch {}
+    })();
     const raw = StorageService.getAccountType();
     if (raw === "premium") setAccountType("premium");
     else if (raw === "custom") setAccountType("custom");
     else setAccountType(null);
-  }, [open]);
-
-  useEffect(() => { if (!open) return; setCreditsOpen(false); }, [open]);
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
     const raw = customUUID.trim();
     if (!raw) { StorageService.remove("customUUID"); return; }
     if (normalizedUUID && normalizedUUID !== "__invalid__") {
       StorageService.set("customUUID", normalizedUUID);
     }
-  }, [customUUID, normalizedUUID, open]);
+  }, [customUUID, normalizedUUID]);
 
   useEffect(() => {
     StorageService.setRPCEnabled(enableRPC);
@@ -169,7 +207,6 @@ const SettingsModal: React.FC<{
     runningVersion.type === selected.type && runningVersion.build_index === selected.build_index;
 
   useEffect(() => {
-    if (!open) return;
     const seq = ++onlinePatchStateSeq.current;
     if (!gameDir || !selected || !selected.installed) {
       setOnlinePatchEnabledForSelected(false);
@@ -192,7 +229,7 @@ const SettingsModal: React.FC<{
         setCheckingOnlinePatchState(false);
       }
     })();
-  }, [open, gameDir, selected]);
+  }, [gameDir, selected]);
 
   const canRemoveOnlinePatch = !!gameDir && !!selected && !!selected.installed &&
     !patchingOnline && !checkingOnlinePatchState && onlinePatchEnabledForSelected &&
@@ -244,148 +281,165 @@ const SettingsModal: React.FC<{
     }
   };
 
-  if (!open && !closing) return null;
-
-  const labelStyle = {
-    fontSize: "10px",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.08em",
-    color: "var(--chakra-colors-whiteAlpha-500)",
-    fontWeight: "bold",
-  };
+  const dirPath = gameDir || defaultGameDir || t("settings.downloadDirectory.loading");
 
   return (
     <Box
-      className="glass-backdrop animate-fade-in"
-      position="fixed"
-      inset={0}
-      zIndex={50}
+      position="relative"
+      w="full"
+      h="full"
+      bg="transparent"
+      px={8}
+      py={6}
       display="flex"
-      alignItems="center"
-      justifyContent="center"
+      flexDir="column"
+      overflow="hidden"
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <Box
-        className={closing ? "animate-settings-out" : "animate-settings-in"}
-        position="relative"
-        w="92vw"
-        maxW="1800px"
-        h="88vh"
-        mx="auto"
-        rounded="xl"
-        bg="linear-gradient(to bottom, rgba(27,32,48,0.97), rgba(20,24,36,0.97))"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        shadow="2xl"
-        px={10}
-        py={6}
-        display="flex"
-        flexDir="column"
-      >
-        <IconButton
-          aria-label={t("common.close")}
-          position="absolute"
-          top={3}
-          {...(isRTL ? { left: 3 } : { right: 3 })}
-          size="sm"
-          variant="ghost"
-          color="whiteAlpha.600"
-          _hover={{ color: "white", bg: "whiteAlpha.100" }}
-          rounded="full"
-          onClick={() => {
-            setClosing(true);
-            setTimeout(() => { setClosing(false); onClose(); }, 160);
-          }}
-        >
-          <IconX size={18} />
-        </IconButton>
+      {/* Title row with back button / breadcrumb */}
+      <HStack mb={6} gap={3} align="center">
+        {(onBack || creditsSubPage) && (
+          <IconButton
+            aria-label={t("common.back")}
+            variant="ghost"
+            size="sm"
+            w="36px"
+            h="36px"
+            minW="36px"
+            borderRadius="full"
+            bg="rgba(255,255,255,0.08)"
+            color="white"
+            _hover={{ bg: "rgba(255,255,255,0.14)" }}
+            flexShrink={0}
+            onClick={creditsSubPage ? () => setCreditsSubPage(false) : onBack}
+          >
+            <IconChevronLeft size={20} />
+          </IconButton>
+        )}
+        {/* Title — always 28px, no size jump. Breadcrumb fades in-place. */}
+        <Box display="flex" alignItems="baseline" gap="6px" overflow="hidden">
+          <Text
+            fontSize="28px"
+            fontWeight="700"
+            letterSpacing="-0.02em"
+            color={creditsSubPage ? "rgba(255,255,255,0.35)" : "white"}
+            style={{
+              fontFamily: "'Montserrat', 'Inter', sans-serif",
+              transition: "color 0.2s ease",
+              cursor: creditsSubPage ? "pointer" : "default",
+              flexShrink: 0,
+            }}
+            onClick={creditsSubPage ? () => setCreditsSubPage(false) : undefined}
+            _hover={creditsSubPage ? { color: "rgba(255,255,255,0.6)" } : {}}
+          >
+            {t("settings.title")}
+          </Text>
+          <Box
+            display="inline-flex"
+            alignItems="baseline"
+            gap="6px"
+            style={{
+              opacity: creditsSubPage ? 1 : 0,
+              transform: creditsSubPage ? "translateX(0px)" : "translateX(-8px)",
+              transition: "opacity 0.22s ease, transform 0.22s ease",
+              pointerEvents: "none",
+            }}
+          >
+            <Text as="span" fontSize="26px" fontWeight="300" color="rgba(255,255,255,0.25)" lineHeight={1}>›</Text>
+            <Text
+              as="span"
+              fontSize="28px"
+              fontWeight="700"
+              letterSpacing="-0.02em"
+              color="white"
+              style={{ fontFamily: "'Montserrat', 'Inter', sans-serif" }}
+            >
+              {t("settings.credits.label")}
+            </Text>
+          </Box>
+        </Box>
+      </HStack>
 
-        <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide" mb={4}>
-          {t("settings.title")}
-        </Text>
-
-        <Box flex={1} minH={0} overflowY="auto" pr={2} className="dark-scrollbar">
-          <SimpleGrid columns={2} gap={6}>
-
-            <VStack align="stretch" gap={2}>
-              <Text style={labelStyle}>{t("settings.gameDirectory.label")}</Text>
-              <Button
-                w="full"
-                justifyContent="space-between"
-                bg="rgba(31,37,56,1)"
-                _hover={{ bg: "rgba(38,45,68,1)" }}
-                border="1px solid"
-                borderColor="whiteAlpha.100"
-                color="white"
-                onClick={handleOpenGameDir}
-              >
-                <Text fontSize="sm">{t("settings.gameDirectory.openFolder")}</Text>
-                <IconFolderOpen size={18} />
-              </Button>
-            </VStack>
-
-            <VStack align="stretch" gap={2}>
-              <Text style={labelStyle}>{t("settings.downloadDirectory.label")}</Text>
-              <Button
-                w="full"
-                justifyContent="space-between"
-                bg="rgba(31,37,56,1)"
-                _hover={{ bg: "rgba(38,45,68,1)" }}
-                border="1px solid"
-                borderColor="whiteAlpha.100"
-                color="white"
-                disabled={changingDir}
-                onClick={handleChangeDownloadDir}
-              >
-                <Text fontSize="sm">
-                  {changingDir ? t("settings.downloadDirectory.selecting") : t("settings.downloadDirectory.change")}
+      {/* Scrollable body */}
+      {creditsSubPage ? (
+        /* ── Credits subpage ── */
+        <Box flex={1} minH={0} overflowY="auto" pr={1} className="dark-scrollbar">
+            {[
+              ["Project Lead & Lead Developer", [["vZyle", "Project Concept, Launcher Development, Online Client Patching System"]]],
+              ["Launcher Developer", [["Fitzxel", "Launcher Programming"]]],
+              ["Lead Graphic Designer", [["primeisonline", "Graphic Design and Matcha! system"]]],
+              ["Operations Manager & Localization Lead", [["KaiZorakDEV", "Discord Management, Server Organization, Translation Systems"]]],
+              ["Server Patching & Deployment Specialist", [["Nexusatko", "Online Server Patching, Dedicated Server Setup, Czech & Slovak Translation"]]],
+              ["Technical Advisor", [["IkyMax", "Game Server Architecture Consultant"]]],
+              ["Web Designer", [["Lunar Katsu", "Website Design"]]],
+            ].map(([role, members]) => (
+              <Box key={role as string} mt={6} _first={{ mt: 0 }}>
+                <Text fontSize="11px" color="rgba(255,255,255,0.3)" fontWeight="bold" textTransform="uppercase" letterSpacing="0.06em">
+                  {role as string}
                 </Text>
-                <IconFolderOpen size={18} />
-              </Button>
-              <Text fontSize="10px" color="whiteAlpha.500" fontFamily="mono" wordBreak="break-all">
-                {gameDir || t("settings.downloadDirectory.loading")}
-              </Text>
-            </VStack>
-
-            {accountType === "custom" && (
-              <Box gridColumn="span 2">
-                <VStack align="stretch" gap={2}>
-                  <Text style={labelStyle}>{t("settings.customUUID.label")}</Text>
-                  <Input
-                    value={customUUID}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomUUID(e.target.value)}
-                    placeholder={t("settings.customUUID.placeholder")}
-                    bg="rgba(31,37,56,1)"
-                    border="1px solid"
-                    borderColor="whiteAlpha.100"
-                    color="white"
-                    _focus={{ borderColor: "blue.500" }}
-                    spellCheck={false}
-                  />
-                  <HStack justify="space-between">
-                    <Text fontSize="10px" color="whiteAlpha.500">
-                      {customUUID.trim().length === 0
-                        ? t("settings.customUUID.usesAuto")
-                        : normalizedUUID === "__invalid__"
-                          ? t("settings.customUUID.invalid")
-                          : t("settings.customUUID.saved", { uuid: normalizedUUID })}
-                    </Text>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      color="red.400"
-                      _hover={{ color: "red.300" }}
-                      onClick={() => { setCustomUUID(""); StorageService.remove("customUUID"); }}
-                    >
-                      {t("common.clear")}
-                    </Button>
-                  </HStack>
-                </VStack>
+                {(members as [string, string][]).map(([name, desc]) => (
+                  <Text key={name} mt={1} fontSize="sm" color="rgba(255,255,255,0.75)">
+                    <Text as="span" color="#67b7f7">{name}</Text> — {desc}
+                  </Text>
+                ))}
               </Box>
-            )}
+            ))}
 
-            <HStack gap={3} align="center">
-              <Text style={labelStyle}>{t("settings.discordRPC")}:</Text>
+            <Box mt={6}>
+              <Text fontSize="11px" color="rgba(255,255,255,0.3)" fontWeight="bold" textTransform="uppercase" letterSpacing="0.06em">
+                Localization Team
+              </Text>
+              {[
+                ["Kapugoat", "Spanish"], ["SaYrZ", "Arabic"], ["multyfora", "Russian"],
+                ["bimbimbamreal", "German"], ["mobun", "Vietnamese"], ["polished_mercury", "Polish"],
+                ["farrdev", "Indonesian"], ["fine_xd_", "Persian/Farsi"], ["Astinix", "Ukrainian"],
+              ].map(([name, lang]) => (
+                <Text key={name} mt={1} fontSize="sm" color="rgba(255,255,255,0.75)">
+                  <Text as="span" color="#67b7f7">{name}</Text> — {lang}
+                </Text>
+              ))}
+            </Box>
+
+            <Box mt={6}>
+              <Text fontSize="11px" color="rgba(255,255,255,0.3)" fontWeight="bold" textTransform="uppercase" letterSpacing="0.06em">
+                Special Thanks
+              </Text>
+              <Text mt={1} fontSize="sm" color="rgba(255,255,255,0.75)">
+                <Text as="span" color="#67b7f7">Magd &amp; Kyo</Text> — Honorable Mentions
+              </Text>
+            </Box>
+
+            <Text mt={6} mb={4} fontSize="sm" color="rgba(255,255,255,0.35)" fontStyle="italic">
+              Thank you to everyone who made this project possible ♥
+            </Text>
+        </Box>
+      ) : (
+      /* ── Main settings list ── */
+      <Box flex={1} minH={0} overflowY="auto" pr={1} className="dark-scrollbar">
+        <VStack align="stretch" gap={0}>
+
+          {/* Game directory */}
+          <SettingRow
+            label={t("settings.gameDirectory.label")}
+            hint={dirPath}
+            onClick={() => void handleOpenGameDir()}
+            right={<IconFolderOpen size={18} color="#686868" />}
+          />
+
+          {/* Download directory */}
+          <SettingRow
+            label={changingDir ? t("settings.downloadDirectory.selecting") : t("settings.downloadDirectory.label")}
+            hint={dirPath}
+            onClick={changingDir ? undefined : () => void handleChangeDownloadDir()}
+            right={<IconFolderOpen size={18} color="#686868" />}
+            disabled={changingDir}
+          />
+
+          {/* Discord RPC */}
+          <SettingRow
+            label={t("settings.discordRPC")}
+            hint={t("settings.discordRPCHint")}
+            right={
               <Switch.Root
                 checked={enableRPC}
                 onCheckedChange={(d) => setEnableRPC(!!d.checked)}
@@ -393,14 +447,15 @@ const SettingsModal: React.FC<{
               >
                 <Switch.HiddenInput />
                 <Switch.Control />
-                <Switch.Label fontSize="xs" color="whiteAlpha.700">
-                  {enableRPC ? t("common.enabled") : t("common.disabled")}
-                </Switch.Label>
               </Switch.Root>
-            </HStack>
+            }
+          />
 
-            <HStack gap={3} align="center">
-              <Text style={labelStyle}>{t("settings.startupSound")}:</Text>
+          {/* Startup sound */}
+          <SettingRow
+            label={t("settings.startupSound")}
+            hint={t("settings.startupSoundHint")}
+            right={
               <Switch.Root
                 checked={startupSoundEnabled}
                 onCheckedChange={(d) => handleStartupSoundChange(!!d.checked)}
@@ -408,290 +463,167 @@ const SettingsModal: React.FC<{
               >
                 <Switch.HiddenInput />
                 <Switch.Control />
-                <Switch.Label fontSize="xs" color="whiteAlpha.700">
-                  {startupSoundEnabled ? t("common.enabled") : t("common.disabled")}
-                </Switch.Label>
               </Switch.Root>
-            </HStack>
+            }
+          />
 
-            <Box gridColumn="span 2">
-              <HStack gap={3} align="center">
-                <Text style={labelStyle}>{t("settings.steamDeck.label")}:</Text>
-                <Switch.Root
-                  checked={steamDeckMode}
-                  disabled={!isLinux || steamDeckWorking}
-                  onCheckedChange={(d) => void handleToggleSteamDeckMode(!!d.checked)}
-                  colorPalette="blue"
-                  title={isLinux ? t("settings.steamDeck.tooltipLinux") : t("settings.steamDeck.hintNonLinux")}
-                >
-                  <Switch.HiddenInput />
-                  <Switch.Control />
-                  <Switch.Label fontSize="xs" color="whiteAlpha.700">
-                    {steamDeckWorking ? t("common.working") : steamDeckMode ? t("common.enabled") : t("common.disabled")}
-                  </Switch.Label>
-                </Switch.Root>
-              </HStack>
-              <Text mt={2} fontSize="11px" color="whiteAlpha.500">
-                {isLinux ? t("settings.steamDeck.hintLinux") : t("settings.steamDeck.linuxOnly")}
-              </Text>
-              {steamDeckStatus ? (
-                <Text mt={2} fontSize="11px" color="whiteAlpha.500" fontFamily="mono" wordBreak="break-words">
-                  {steamDeckStatus}
-                </Text>
-              ) : null}
-            </Box>
-
-            <Box gridColumn="span 2">
-              <VStack align="stretch" gap={2}>
-                <Text style={labelStyle}>{t("settings.onlinePatch.label")}</Text>
-                <Button
-                  w="full"
-                  justifyContent="space-between"
-                  bg="rgba(31,37,56,1)"
-                  _hover={{ bg: "rgba(239,68,68,0.08)" }}
-                  border="1px solid"
-                  borderColor="rgba(239,68,68,0.3)"
-                  color="red.300"
-                  disabled={!canRemoveOnlinePatch}
-                  onClick={() => setRemoveOnlinePatchOpen(true)}
-                >
-                  <Text fontSize="sm">
-                    {patchingOnline ? t("common.working") : t("settings.onlinePatch.removeButton")}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.8}>{selected ? selectedLabel : ""}</Text>
-                </Button>
-                {gameDir && selected && selected.installed && !patchingOnline && !checkingOnlinePatchState && !onlinePatchEnabledForSelected ? (
-                  <Text fontSize="11px" color="whiteAlpha.500">{t("settings.onlinePatch.hintEnableToRemove")}</Text>
-                ) : null}
-                {selectedIsRunning ? (
-                  <Text fontSize="11px" color="whiteAlpha.500">{t("settings.onlinePatch.hintCloseGame")}</Text>
-                ) : null}
-                <Text fontSize="11px" color="whiteAlpha.500">{t("settings.onlinePatch.description")}</Text>
-              </VStack>
-            </Box>
-
-            <Box gridColumn="span 2">
-              <VStack align="stretch" gap={2}>
-                <Text style={labelStyle}>{t("settings.cache.label")}</Text>
-                <Button
-                  w="full"
-                  justifyContent="flex-start"
-                  bg="rgba(31,37,56,1)"
-                  _hover={{ bg: "rgba(38,45,68,1)" }}
-                  border="1px solid"
-                  borderColor="whiteAlpha.100"
-                  color="white"
-                  disabled={clearingCache}
-                  onClick={() => void handleClearInstallCache()}
-                >
-                  <Text fontSize="sm">
-                    {clearingCache ? t("settings.cache.clearing") : t("settings.cache.clearButton")}
-                  </Text>
-                </Button>
-                <Text fontSize="11px" color="whiteAlpha.500">{t("settings.cache.description")}</Text>
-              </VStack>
-            </Box>
-
-          </SimpleGrid>
-        </Box>
-
-        <HStack
-          pt={4}
-          mt={4}
-          borderTop="1px solid"
-          borderColor="whiteAlpha.100"
-          justify="space-between"
-          gap={4}
-          flexWrap="wrap"
-        >
-          <VStack align="flex-start" gap={2}>
-            <Text fontSize="xs" color="whiteAlpha.500">
-              {t("settings.madeBy")}:{" "}
-              <Text
-                as="span"
-                fontWeight="extrabold"
-                letterSpacing="wide"
-                className="bg-chroma-animated animate-chroma-shift"
-                style={{
-                  background: "linear-gradient(90deg,#3b82f6,#22d3ee,#3b82f6)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundSize: "200% 100%",
-                }}
+          {/* SteamDeck mode */}
+          <SettingRow
+            label={t("settings.steamDeck.label")}
+            hint={steamDeckStatus || (isLinux ? t("settings.steamDeck.hintLinux") : t("settings.steamDeck.linuxOnly"))}
+            right={
+              <Switch.Root
+                checked={steamDeckMode}
+                disabled={!isLinux || steamDeckWorking}
+                onCheckedChange={(d) => void handleToggleSteamDeckMode(!!d.checked)}
+                colorPalette="blue"
+                title={isLinux ? t("settings.steamDeck.tooltipLinux") : t("settings.steamDeck.hintNonLinux")}
               >
-                {t("settings.teamName")}
+                <Switch.HiddenInput />
+                <Switch.Control />
+              </Switch.Root>
+            }
+          />
+
+          {/* Online patch */}
+          <SettingRow
+            label={patchingOnline ? t("common.working") : t("settings.onlinePatch.removeButton")}
+            hint={
+              selectedIsRunning
+                ? t("settings.onlinePatch.hintCloseGame")
+                : gameDir && selected && selected.installed && !patchingOnline && !checkingOnlinePatchState && !onlinePatchEnabledForSelected
+                  ? t("settings.onlinePatch.hintEnableToRemove")
+                  : t("settings.onlinePatch.description")
+            }
+            onClick={canRemoveOnlinePatch ? () => setRemoveOnlinePatchOpen(true) : undefined}
+            right={
+              selected ? (
+                <Text fontSize="xs" color="#686868">{selectedLabel}</Text>
+              ) : undefined
+            }
+            danger
+            disabled={!canRemoveOnlinePatch}
+          />
+
+          {/* Clear cache */}
+          <SettingRow
+            label={clearingCache ? t("settings.cache.clearing") : t("settings.cache.clearButton")}
+            hint={t("settings.cache.description")}
+            onClick={clearingCache ? undefined : () => void handleClearInstallCache()}
+            disabled={clearingCache}
+            right={<IconChevronRight size={16} color="#686868" />}
+          />
+
+          {/* Custom UUID (conditional) */}
+          {accountType === "custom" && (
+            <Box py={4} px={3} borderBottom="1px solid" borderColor="rgba(255,255,255,0.06)">
+              <Text fontSize="15px" fontWeight="500" color="rgba(255,255,255,0.92)" mb={2}>
+                {t("settings.customUUID.label")}
               </Text>
-            </Text>
-            <Button
-              variant="outline"
-              size="sm"
-              borderColor="rgba(59,130,246,0.4)"
-              color="blue.400"
-              _hover={{ bg: "rgba(59,130,246,0.1)" }}
-              onClick={() => setCreditsOpen(true)}
-            >
-              {t("settings.credits.label")}
-            </Button>
-          </VStack>
-
-          <VStack gap={1} align="center">
-            <Text style={{ ...labelStyle, color: "var(--chakra-colors-whiteAlpha-400)" }}>
-              {t("settings.language.label")} {LANGUAGES[lang].flag}
-            </Text>
-            <select
-              value={lang}
-              onChange={(e) => changeLanguage(e.target.value as keyof typeof LANGUAGES)}
-              style={{
-                background: "rgba(26,31,46,1)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "white",
-                borderRadius: "8px",
-                padding: "8px",
-                outline: "none",
-                fontSize: "0.875rem",
-              }}
-            >
-              {Object.entries(LANGUAGES).map(([code, info]) => (
-                <option
-                  key={code}
-                  value={code}
-                  dir={(RTL_LANGUAGES as readonly string[]).includes(code) ? "rtl" : "ltr"}
-                >
-                  {info.flag} {info.name}
-                </option>
-              ))}
-            </select>
-          </VStack>
-
-          <VStack gap={3} align="flex-end">
-            <Text fontSize="11px" fontFamily="mono" color="whiteAlpha.500">
-              {`${window.config.BUILD_DATE} V${window.config.VERSION}`}
-            </Text>
-            <Button
-              variant="outline"
-              size="sm"
-              borderColor="rgba(59,130,246,0.4)"
-              color="blue.400"
-              _hover={{ bg: "rgba(59,130,246,0.1)" }}
-              disabled={checkingUpdates}
-              onClick={() => checkForUpdates("manual")}
-            >
-              {checkingUpdates ? t("settings.updates.checking") : t("settings.updates.check")}
-            </Button>
-            {onLogout && (
-              <Button
-                size="sm"
+              <Input
+                value={customUUID}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomUUID(e.target.value)}
+                placeholder={t("settings.customUUID.placeholder")}
+                bg="rgba(255,255,255,0.05)"
+                border="1px solid rgba(255,255,255,0.1)"
                 color="white"
-                fontWeight="bold"
-                shadow="lg"
-                style={{ background: "linear-gradient(90deg,#3b82f6,#22d3ee)" }}
-                _hover={{ opacity: 0.9 }}
-                onClick={onLogout}
-              >
-                {t("settings.logout")}
-              </Button>
-            )}
-          </VStack>
-        </HStack>
-
-        {creditsOpen ? (
-          <Box
-            position="absolute"
-            inset={0}
-            rounded="xl"
-            className="glass-backdrop"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            p={6}
-          >
-            <Box
-              position="relative"
-              w="full"
-              maxW="xl"
-              rounded="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.100"
-              bg="linear-gradient(to bottom, rgba(27,32,48,0.97), rgba(20,24,36,0.97))"
-              shadow="2xl"
-              px={6}
-              py={5}
-            >
-              <IconButton
-                aria-label={t("common.close")}
-                position="absolute"
-                top={3}
-                {...(isRTL ? { left: 3 } : { right: 3 })}
-                size="sm"
-                variant="ghost"
-                color="whiteAlpha.600"
-                _hover={{ color: "white", bg: "whiteAlpha.100" }}
-                rounded="full"
-                onClick={() => setCreditsOpen(false)}
-              >
-                <IconX size={18} />
-              </IconButton>
-
-              <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide">
-                {t("settings.credits.label")}
-              </Text>
-
-              <Box mt={4} maxH="320px" overflowY="auto" pr={1} className="dark-scrollbar">
-                <Box rounded="lg" border="1px solid" borderColor="whiteAlpha.100" bg="rgba(31,37,56,0.7)" px={4} py={3}>
-                  {[
-                    ["Project Lead & Lead Developer", [["vZyle", "Project Concept, Launcher Development, Online Client Patching System"]]],
-                    ["Launcher Developer", [["Fitzxel", "Launcher Programming"]]],
-                    ["Lead Graphic Designer", [["primeisonline", "Graphic Design and Matcha! system"]]],
-                    ["Operations Manager & Localization Lead", [["KaiZorakDEV", "Discord Management, Server Organization, Translation Systems"]]],
-                    ["Server Patching & Deployment Specialist", [["Nexusatko", "Online Server Patching, Dedicated Server Setup, Czech & Slovak Translation"]]],
-                    ["Technical Advisor", [["IkyMax", "Game Server Architecture Consultant"]]],
-                    ["Web Designer", [["Lunar Katsu", "Website Design"]]],
-                  ].map(([role, members]) => (
-                    <Box key={role as string} mt={4} _first={{ mt: 0 }}>
-                      <Text fontSize="11px" color="whiteAlpha.400" fontWeight="bold" textTransform="uppercase">
-                        {role as string}
-                      </Text>
-                      {(members as [string, string][]).map(([name, desc]) => (
-                        <Text key={name} mt={1} fontSize="sm" color="whiteAlpha.800">
-                          <Text as="span" color="blue.400">{name}</Text> ({desc})
-                        </Text>
-                      ))}
-                    </Box>
-                  ))}
-
-                  <Box mt={4}>
-                    <Text fontSize="11px" color="whiteAlpha.400" fontWeight="bold" textTransform="uppercase">
-                      Localization Team
-                    </Text>
-                    {[
-                      ["Kapugoat", "Spanish"], ["SaYrZ", "Arabic"], ["multyfora", "Russian"],
-                      ["bimbimbamreal", "German"], ["mobun", "Vietnamese"], ["polished_mercury", "Polish"],
-                      ["farrdev", "Indonesian"], ["fine_xd_", "Persian/Farsi"], ["Astinix", "Ukrainian"],
-                    ].map(([name, lang]) => (
-                      <Text key={name} mt={1} fontSize="sm" color="whiteAlpha.800">
-                        <Text as="span" color="blue.400">{name}</Text> ({lang})
-                      </Text>
-                    ))}
-                  </Box>
-
-                  <Box mt={4}>
-                    <Text fontSize="11px" color="whiteAlpha.400" fontWeight="bold" textTransform="uppercase">
-                      Special Thanks
-                    </Text>
-                    <Text mt={1} fontSize="sm" color="whiteAlpha.800">
-                      <Text as="span" color="blue.400">Magd &amp; Kyo</Text> (Honorable Mentions)
-                    </Text>
-                  </Box>
-
-                  <Text mt={4} fontSize="sm" color="whiteAlpha.800">
-                    Thank you to everyone who made this project possible &lt;3
-                  </Text>
-                </Box>
-              </Box>
+                _focus={{ borderColor: "blue.500" }}
+                spellCheck={false}
+              />
+              <HStack justify="space-between" mt={1}>
+                <Text fontSize="xs" color="rgba(255,255,255,0.35)">
+                  {customUUID.trim().length === 0
+                    ? t("settings.customUUID.usesAuto")
+                    : normalizedUUID === "__invalid__"
+                      ? t("settings.customUUID.invalid")
+                      : t("settings.customUUID.saved", { uuid: normalizedUUID })}
+                </Text>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  color="red.400"
+                  _hover={{ color: "red.300" }}
+                  onClick={() => { setCustomUUID(""); StorageService.remove("customUUID"); }}
+                >
+                  {t("common.clear")}
+                </Button>
+              </HStack>
             </Box>
+          )}
+
+          {/* ── App section ── */}
+
+          {/* Language */}
+          <Box py={4} px={3} borderBottom="1px solid" borderColor="rgba(255,255,255,0.06)">
+            <Text fontSize="15px" fontWeight="500" color="rgba(255,255,255,0.92)" mb={3}>
+              {t("settings.language.label")}
+            </Text>
+            <HStack gap={2} flexWrap="wrap">
+              {Object.entries(LANGUAGES).map(([code, info]) => {
+                const isActive = lang === code;
+                return (
+                  <Box
+                    key={code}
+                    as="button"
+                    px={3}
+                    py="6px"
+                    borderRadius="full"
+                    fontSize="13px"
+                    fontWeight={isActive ? "600" : "400"}
+                    bg={isActive ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)"}
+                    color={isActive ? "white" : "rgba(255,255,255,0.5)"}
+                    border={`1px solid ${isActive ? "rgba(255,255,255,0.22)" : "transparent"}`}
+                    cursor="pointer"
+                    transition="all 0.15s"
+                    onClick={() => changeLanguage(code as keyof typeof LANGUAGES)}
+                    dir={(RTL_LANGUAGES as readonly string[]).includes(code) ? "rtl" : "ltr"}
+                    display="inline-flex"
+                    alignItems="center"
+                    gap="6px"
+                  >
+                    <ReactCountryFlag
+                      countryCode={info.countryCode}
+                      svg
+                      style={{ width: "16px", height: "12px", borderRadius: "2px" }}
+                    />
+                    {info.name}
+                  </Box>
+                );
+              })}
+            </HStack>
           </Box>
-        ) : null}
+
+          {/* Check for updates */}
+          <SettingRow
+            label={checkingUpdates ? t("settings.updates.checking") : t("settings.updates.check")}
+            hint={`${window.config.BUILD_DATE}  ·  v${window.config.VERSION}`}
+            onClick={checkingUpdates ? undefined : () => checkForUpdates("manual")}
+            disabled={checkingUpdates}
+            right={<IconChevronRight size={16} color="#686868" />}
+          />
+
+          {/* Credits */}
+          <SettingRow
+            label={t("settings.credits.label")}
+            hint={`${t("settings.madeBy")}: Butter Launcher Team`}
+            onClick={() => setCreditsSubPage(true)}
+            right={<IconChevronRight size={16} color="#686868" />}
+          />
+
+          {/* Logout */}
+          {onLogout && (
+            <SettingRow
+              label={t("settings.logout")}
+              onClick={onLogout}
+              danger
+              noBorder
+              right={<IconChevronRight size={16} color="#f87171" />}
+            />
+          )}
+
+        </VStack>
       </Box>
+      )}{/* end main settings list */}
 
       <ConfirmModal
         open={removeOnlinePatchOpen}

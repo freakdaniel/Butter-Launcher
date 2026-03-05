@@ -46,59 +46,6 @@ const DragBar: React.FC<{
         style={{ appRegion: "no-drag" } as React.CSSProperties}
       >
         <IconButton
-          aria-label="Global Chat"
-          title={t("launcher.globalChat", { defaultValue: "Global Chat" })}
-          variant="ghost"
-          size="sm"
-          w={8} h={8}
-          minW={8}
-          borderRadius="md"
-          color="white"
-          _hover={{ bg: "whiteAlpha.100" }}
-          onClick={() => {
-            try {
-              const hasToken = !!StorageService.getMatchaToken();
-              if (!hasToken) return;
-            } catch { return; }
-            onOpenMatchaGlobalChat?.();
-          }}
-        >
-          <IconMessageCircle size={17} />
-        </IconButton>
-
-        <IconButton
-          aria-label="Instagram"
-          title="Instagram"
-          variant="ghost"
-          size="sm"
-          w={8} h={8}
-          minW={8}
-          borderRadius="md"
-          color="white"
-          _hover={{ bg: "#E1306C" }}
-          onClick={() => window.config.openExternal("https://www.instagram.com/butterlauncher_official")}
-        >
-          <IconBrandInstagram size={17} />
-        </IconButton>
-
-        <IconButton
-          aria-label="X (Twitter)"
-          title="X (Twitter)"
-          variant="ghost"
-          size="sm"
-          w={8} h={8}
-          minW={8}
-          borderRadius="md"
-          color="white"
-          _hover={{ bg: "rgba(0,0,0,0.60)" }}
-          onClick={() => window.config.openExternal("https://x.com/Butter_Launcher/")}
-        >
-          <IconBrandX size={17} />
-        </IconButton>
-
-        <Box w="1px" h={5} bg="whiteAlpha.100" mx={2} />
-
-        <IconButton
           aria-label={t("common.minimize")}
           title={t("common.minimize")}
           variant="ghost"

@@ -1388,6 +1388,8 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1026,
     height: 640,
+    minWidth: 900,
+    minHeight: 600,
     frame: false,
     titleBarStyle: "hidden",
     resizable: true,

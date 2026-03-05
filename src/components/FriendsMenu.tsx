@@ -16,9 +16,9 @@ import { Box, HStack, VStack, Text } from "@chakra-ui/react";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const cn = (...args: (string | boolean | undefined | null)[]): string =>
   args.filter(Boolean).join(" ");
-import matchaIcon from "../assets/matcha-icon.png";
-import matchaStartSfx from "../assets/matchastart.ogg";
-import notiSfx from "../assets/noti.ogg";
+import matchaIcon from "../assets/icons/matcha.svg";
+import matchaStartSfx from "../assets/sounds/matchastart.ogg";
+import notiSfx from "../assets/sounds/noti.ogg";
 
 // ── Extracted imports ──────────────────────────────────────────
 import { MATCHA_API_BASE, MATCHA_WS_URL } from "../ipc/channels";
@@ -105,6 +105,7 @@ const sanitizeUnreadMap = (raw: any): Record<string, number> => {
 export default function FriendsMenu({
   onClose,
   open,
+  inline,
   onOpenTerms,
   openTo,
   openToNonce,
@@ -113,6 +114,7 @@ export default function FriendsMenu({
 }: {
   onClose: () => void;
   open: boolean;
+  inline?: boolean;
   onOpenTerms: () => void;
   openTo?: "friends" | "globalChat";
   openToNonce?: number;
@@ -2199,14 +2201,17 @@ export default function FriendsMenu({
       ref={containerRef}
       className="no-drag"
       position="relative"
-      rounded="xl"
-      border="1px solid"
-      borderColor="rgba(255,255,255,0.1)"
-      bg="rgba(0,0,0,0.45)"
-      style={{ backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
-      boxShadow="xl"
       color="white"
       overflow="hidden"
+      rounded={inline ? undefined : "xl"}
+      border={inline ? undefined : "1px solid"}
+      borderColor={inline ? undefined : "rgba(255,255,255,0.1)"}
+      bg={inline ? undefined : "rgba(0,0,0,0.45)"}
+      style={inline ? undefined : { backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+      boxShadow={inline ? undefined : "xl"}
+      h={inline ? "full" : undefined}
+      display={inline ? "flex" : undefined}
+      flexDirection={inline ? "column" : undefined}
     >
       <Box pointerEvents="none" position="absolute" inset={0} bg="rgba(255,255,255,0.05)" />
 
@@ -2232,7 +2237,15 @@ export default function FriendsMenu({
         )
       ) : null}
 
-      <Box position="relative" p={4}>
+      <Box
+        position="relative"
+        p={4}
+        flex={inline ? "1" : undefined}
+        minH={inline ? 0 : undefined}
+        display={inline ? "flex" : undefined}
+        flexDirection={inline ? "column" : undefined}
+        overflow={inline ? "hidden" : undefined}
+      >
         {error ? (
           <Box position="absolute" left={4} right={4} top={16} zIndex={50}>
             <HStack
@@ -3487,53 +3500,64 @@ export default function FriendsMenu({
         ) : null}
 
         {mode === "intro" ? (
-          <Box mt={3}>
+          <Box mt={4} flex="1" display="flex" flexDirection="column" overflow="auto" style={{ scrollbarWidth: "none" }}>
             <Box
-              className={cn(
-                introDocked ? "matcha-intro-text" : "",
-              )}
-              style={{opacity: introDocked ? 1 : 0}}
+              className={cn(introDocked ? "matcha-intro-text" : "")}
+              style={{ opacity: introDocked ? 1 : 0, transition: "opacity 0.3s" }}
+              flex="1"
               display="flex"
               flexDirection="column"
               gap={4}
             >
-              <Box fontSize="sm" color="rgba(255,255,255,0.75)" lineHeight="short">
+              {/* Subtitle */}
+              <Box fontSize="sm" color="rgba(255,255,255,0.5)" lineHeight="1.7">
                 {t("friendsMenu.intro.subtitle")}
               </Box>
 
-              <VStack gap={2} align="stretch" fontSize="sm">
-                <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.1)" bg="rgba(0,0,0,0.25)" px={3} py={2}>
-                  {t("friendsMenu.intro.feature1")}
-                </Box>
-                <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.1)" bg="rgba(0,0,0,0.25)" px={3} py={2}>
-                  {t("friendsMenu.intro.feature2")}
-                </Box>
-                <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.1)" bg="rgba(0,0,0,0.25)" px={3} py={2}>
-                  {t("friendsMenu.intro.feature3")}
-                </Box>
-              </VStack>
-
-              <Box fontSize="sm" color="rgba(255,255,255,0.8)" lineHeight="short">
-                <Box>{t("friendsMenu.intro.cta")}</Box>
-                <Box mt={1} color="rgba(255,255,255,0.65)">
-                  {t("friendsMenu.intro.powered")}
-                </Box>
+              {/* Feature rows — settings style */}
+              <Box borderRadius="xl" border="1px solid" borderColor="rgba(255,255,255,0.07)" overflow="hidden">
+                {[
+                  { emoji: "💬", text: t("friendsMenu.intro.feature1") },
+                  { emoji: "🤝", text: t("friendsMenu.intro.feature2") },
+                  { emoji: "🎮", text: t("friendsMenu.intro.feature3") },
+                ].map((f, i, arr) => (
+                  <Box
+                    key={i}
+                    px={4} py={3}
+                    display="flex" alignItems="center" gap={3}
+                    borderBottom={i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : undefined}
+                    bg="rgba(255,255,255,0.02)"
+                  >
+                    <Box fontSize="lg" flexShrink={0} lineHeight={1}>{f.emoji}</Box>
+                    <Box fontSize="sm" fontWeight="500" color="rgba(255,255,255,0.85)">{f.text}</Box>
+                  </Box>
+                ))}
               </Box>
 
-              <Box fontSize="xs" color="rgba(255,255,255,0.6)" lineHeight="short">
+              {/* Spacer */}
+              <Box flex="1" />
+
+              {/* CTA */}
+              <Box fontSize="xs" color="rgba(255,255,255,0.4)" textAlign="center" letterSpacing="wide">
+                {t("friendsMenu.intro.cta")}
+              </Box>
+
+              {/* Terms */}
+              <Box fontSize="11px" color="rgba(255,255,255,0.3)" lineHeight="1.5" textAlign="center">
                 <span>{t("friendsMenu.intro.acceptTermsPrefix")} </span>
                 <button
                   type="button"
-                  style={{color:"#60a5fa", textDecoration:"underline", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:"inherit"}}
+                  style={{ color: "rgba(255,255,255,0.5)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" }}
                   onClick={onOpenTerms}
                 >
                   {t("friendsMenu.intro.acceptTermsLink")}
                 </button>
               </Box>
 
+              {/* Continue — flat button matching app style */}
               <button
                 type="button"
-                style={{width:"100%", padding:"8px 20px", borderRadius:"8px", fontWeight:700, color:"white", background:"linear-gradient(to right, #3b82f6, #22d3ee)", border:"none", cursor:"pointer", boxShadow:"0 10px 15px -3px rgba(0,0,0,0.1)", fontFamily:"inherit"}}
+                style={{ width: "100%", padding: "10px 20px", borderRadius: "12px", fontWeight: 700, fontSize: "0.875rem", color: "white", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.14)", cursor: "pointer", fontFamily: "inherit", letterSpacing: "0.01em" }}
                 onClick={() => setMode("login")}
               >
                 {t("friendsMenu.continue")}
@@ -3653,7 +3677,15 @@ export default function FriendsMenu({
         ) : null}
 
         {mode === "app" && me ? (
-          <Box mt={3} display="flex" flexDirection="column" h="640px" maxH="75vh" minH={0}>
+          <Box
+          mt={3}
+          display="flex"
+          flexDirection="column"
+          h={inline ? undefined : "640px"}
+          maxH={inline ? undefined : "75vh"}
+          flex={inline ? "1" : undefined}
+          minH={0}
+        >
             {appView === "friends" ? (
               <>
                 <input

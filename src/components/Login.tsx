@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
-import butterLoginBg from "../assets/butter-login.jpeg";
-import butterLogo from "../assets/butter-logo.png";
+import butterLoginBg from "../assets/images/butter-login.jpeg";
+import butterLogo from "../assets/images/butter-logo.png";
 import DragBar from "./DragBar";
 import { useTranslation } from "react-i18next";
 import { customAlternativeLoginProvider } from "../utils/dynamicModules/customAlternativeLoginProvider";
@@ -19,6 +19,21 @@ const Login: React.FC<{ onLogin: (username: string) => void }> = ({
   onLogin,
 }) => {
   const { t } = useTranslation();
+
+  // Prefer Minecraft username over Microsoft displayName (which can be an email)
+  const pickBestName = (profile: { displayName?: string; username?: string } | null | undefined): string | null => {
+    if (!profile) return null;
+    const mc = typeof profile.username === "string" ? profile.username.trim() : "";
+    if (mc) return mc;
+    const dn = typeof profile.displayName === "string" ? profile.displayName.trim() : "";
+    if (!dn) return null;
+    // If displayName looks like an email address, use only the local part (before @)
+    if (dn.includes("@")) {
+      const local = dn.split("@")[0].trim();
+      return local || null;
+    }
+    return dn;
+  };
 
   const allowAlternative = customAlternativeLoginProvider.allowAlternative;
   const alternativeLabel = customAlternativeLoginProvider.alternativeLabel;
@@ -59,7 +74,8 @@ const Login: React.FC<{ onLogin: (username: string) => void }> = ({
         const status = await window.config.premiumStatus();
         if (cancelled) return;
         if (status.ok && status.loggedIn && status.profile?.displayName) {
-          onLogin(status.profile.displayName);
+          const name = pickBestName(status.profile) ?? status.profile.displayName;
+          onLogin(name);
         }
       } catch {
         // ignore
@@ -143,6 +159,15 @@ const Login: React.FC<{ onLogin: (username: string) => void }> = ({
         setPremiumError(res.error || "Login failed");
         return;
       }
+      // Fetch fresh status to get the Minecraft username resolved by Hytale API
+      try {
+        const fresh = await window.config.premiumStatus();
+        if (!premiumCancelledRef.current && fresh.ok && fresh.loggedIn && fresh.profile) {
+          const name = pickBestName(fresh.profile) ?? res.displayName;
+          onLogin(name);
+          return;
+        }
+      } catch { /* fall through to displayName */ }
       onLogin(res.displayName);
     } catch (e) {
       if (premiumCancelledRef.current) return;

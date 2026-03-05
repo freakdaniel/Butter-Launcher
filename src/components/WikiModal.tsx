@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { IconX } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 import { Box, HStack, IconButton, Input, Text } from "@chakra-ui/react";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 const WIKI_URL = "https://hytalewiki.org/";
 const WIKI_PARTITION = "persist:wikiviewer";
@@ -20,11 +19,10 @@ const isWikiUrl = (raw: string): boolean => {
 };
 
 const WikiModal: React.FC<{
-  open: boolean;
   initialUrl?: string | null;
   onClose: (lastUrl: string | null) => void;
   onUrlChange?: (url: string) => void;
-}> = ({ open, initialUrl, onClose, onUrlChange }) => {
+}> = ({ initialUrl, onClose, onUrlChange }) => {
   const { t } = useTranslation();
   const webviewRef = useRef<any>(null);
   const [currentUrl, setCurrentUrl] = useState<string>(WIKI_URL);
@@ -42,13 +40,12 @@ const WikiModal: React.FC<{
   };
 
   useEffect(() => {
-    if (!open) return;
     const onLinkCopied = () => showCopied();
     try { window.ipcRenderer?.on?.("wiki:link-copied", onLinkCopied as any); } catch {}
     return () => {
       try { window.ipcRenderer?.off?.("wiki:link-copied", onLinkCopied as any); } catch {}
     };
-  }, [open]);
+  }, []);
 
   const src = useMemo(() => {
     const candidate = typeof initialUrl === "string" ? initialUrl.trim() : "";
@@ -56,7 +53,6 @@ const WikiModal: React.FC<{
   }, [initialUrl]);
 
   useEffect(() => {
-    if (!open) return;
     let active = true;
     setCurrentUrl(src);
     const w = webviewRef.current;
@@ -101,7 +97,7 @@ const WikiModal: React.FC<{
         w.removeEventListener?.("dom-ready", onDomReady);
       } catch {}
     };
-  }, [open, src, onUrlChange]);
+  }, [src, onUrlChange]);
 
   useEffect(() => {
     return () => {
@@ -124,64 +120,41 @@ const WikiModal: React.FC<{
     } catch {}
   };
 
-  const closeWithState = () => {
-    try {
-      const url = webviewRef.current?.getURL?.();
-      if (typeof url === "string" && isWikiUrl(url)) { onClose(url); return; }
-    } catch {}
-    onClose(null);
-  };
-
-  if (!open) return null;
-  if (typeof document === "undefined" || !document.body) return null;
-
-  return createPortal(
+  return (
     <Box
-      className="glass-backdrop animate-fade-in"
-      position="fixed"
-      inset={0}
-      zIndex={50}
+      position="relative"
+      w="full"
+      h="full"
+      rounded="xl"
+      bg="linear-gradient(to bottom, rgba(27,32,48,0.72), rgba(20,24,36,0.72))"
+      border="1px solid"
+      borderColor="whiteAlpha.100"
+      px={4}
+      py={4}
       display="flex"
-      alignItems="center"
-      justifyContent="center"
-      onClick={closeWithState}
-      role="dialog"
-      aria-modal="true"
+      flexDir="column"
     >
-      <Box
-        className="animate-settings-in"
-        position="relative"
-        w="92vw"
-        maxW="2400px"
-        h="88vh"
-        mx="auto"
-        rounded="xl"
-        bg="linear-gradient(to bottom, rgba(27,32,48,0.72), rgba(20,24,36,0.72))"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        shadow="2xl"
-        px={4}
-        py={4}
-        display="flex"
-        flexDir="column"
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
-        <IconButton
-          aria-label={t("common.close")}
-          position="absolute"
-          top={3}
-          right={3}
-          size="sm"
-          variant="ghost"
-          color="whiteAlpha.600"
-          _hover={{ color: "white", bg: "whiteAlpha.100" }}
-          rounded="full"
-          onClick={closeWithState}
-        >
-          <IconX size={18} />
-        </IconButton>
 
-        <Box pr={12} mb={3}>
+        <HStack pr={2} mb={3} gap={2}>
+          <IconButton
+            aria-label={t("common.close")}
+            size="sm"
+            variant="ghost"
+            color="whiteAlpha.600"
+            _hover={{ color: "white", bg: "whiteAlpha.100" }}
+            rounded="full"
+            flexShrink={0}
+            onClick={() => {
+              try {
+                const url = webviewRef.current?.getURL?.();
+                if (typeof url === "string" && isWikiUrl(url)) { onClose(url); return; }
+              } catch {}
+              onClose(null);
+            }}
+          >
+            <IconArrowLeft size={18} />
+          </IconButton>
+          <Box flex={1} minW={0}>
           <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide">
             {t("launcher.buttons.wiki")}
           </Text>
@@ -222,7 +195,8 @@ const WikiModal: React.FC<{
               {t("common.copied")}
             </Text>
           </HStack>
-        </Box>
+          </Box>
+        </HStack>
 
         <Box
           flex={1}
@@ -240,9 +214,7 @@ const WikiModal: React.FC<{
             style={{ width: "100%", height: "100%", display: "flex" }}
           />
         </Box>
-      </Box>
-    </Box>,
-    document.body,
+    </Box>
   );
 };
 

@@ -332,12 +332,8 @@ const getServerPrimaryRgb = (s: ServerListItem): { r: number; g: number; b: numb
   return parseHexColor(s.nameColor);
 };
 
-const ServersModal: React.FC<{
-  open: boolean;
-  onClose: () => void;
-}> = ({ open, onClose }) => {
+const ServersModal: React.FC = () => {
   const { t } = useTranslation();
-  const [closing, setClosing] = useState(false);
   const [imageViewer, setImageViewer] = useState<{
     open: boolean; src: string; alt?: string; zoomed: boolean;
   }>({ open: false, src: "", alt: "", zoomed: false });
@@ -388,7 +384,6 @@ const ServersModal: React.FC<{
   }, []);
 
   useEffect(() => {
-    if (!open) return;
     setSelected(null);
     setError("");
     setActiveTab("recommended");
@@ -432,7 +427,7 @@ const ServersModal: React.FC<{
       }
     })();
     return () => { cancelled = true; };
-  }, [open, t, urls]);
+  }, [t, urls]);
 
   useEffect(() => {
     return () => {
@@ -460,7 +455,6 @@ const ServersModal: React.FC<{
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [imageViewer.open]);
 
-  if (!open && !closing) return null;
 
   const openedRecommendedDecor = selected ? getRecommendedDecor(selected) : null;
 
@@ -542,13 +536,10 @@ const ServersModal: React.FC<{
 
   return (
     <Box
-      className="glass-backdrop animate-fade-in"
-      position="fixed"
-      inset={0}
-      zIndex={50}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
+      position="relative"
+      w="full"
+      h="full"
+      overflow="hidden"
     >
       {imageViewer.open
         ? createPortal(
@@ -645,16 +636,12 @@ const ServersModal: React.FC<{
         : null}
 
       <Box
-        className={closing ? "animate-settings-out" : "animate-settings-in"}
         position="relative"
-        w="92vw"
-        maxW="2200px"
-        h="88vh"
-        mx="auto"
+        w="full"
+        h="full"
         rounded="xl"
         border="1px solid"
         borderColor={openedRecommendedDecor ? openedRecommendedDecor.frameBorderColor : "#2a3146"}
-        shadow="2xl"
         px={8}
         py={5}
         display="flex"
@@ -688,25 +675,6 @@ const ServersModal: React.FC<{
             />
           </>
         ) : null}
-
-        <IconButton
-          aria-label={t("common.close")}
-          position="absolute"
-          top={3}
-          right={3}
-          size="sm"
-          variant="ghost"
-          color="gray.400"
-          _hover={{ color: "white", bg: "#2f3650" }}
-          rounded="full"
-          bg="#23293a"
-          onClick={() => {
-            setClosing(true);
-            setTimeout(() => { setClosing(false); onClose(); }, 160);
-          }}
-        >
-          <IconX size={18} />
-        </IconButton>
 
         <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide" mb={4} zIndex={1}>
           {t("serversModal.title")}

@@ -9,19 +9,19 @@ import { useRef, useCallback } from "react";
 
 // ── Assets (lazy) ─────────────────────────────────────────────────
 
-import magdPng from "../../assets/magd.png";
-import magdOgg from "../../assets/magd.ogg";
-import simonPng from "../../assets/simon.jpg";
-import simonOgg from "../../assets/simon.ogg";
-import nexusPng from "../../assets/nexus.png";
-import nexusOgg from "../../assets/nexus.ogg";
-import zyleOgg from "../../assets/zyle.ogg";
-import fitzxelOgg from "../../assets/fitzxel.ogg";
-import primePng from "../../assets/prime.png";
-import kaizorakdevOgg from "../../assets/kaizorakdev.ogg";
-import ikymaxOgg from "../../assets/ikymax.ogg";
-import cryptkeeperPng from "../../assets/cryptkeeper.png";
-import nickJpg from "../../assets/nick.jpg";
+import magdPng from "../../assets/images/magd.png";
+import magdOgg from "../../assets/sounds/magd.ogg";
+import simonPng from "../../assets/images/simon.jpg";
+import simonOgg from "../../assets/sounds/simon.ogg";
+import nexusPng from "../../assets/images/nexus.png";
+import nexusOgg from "../../assets/sounds/nexus.ogg";
+import zyleOgg from "../../assets/sounds/zyle.ogg";
+import fitzxelOgg from "../../assets/sounds/fitzxel.ogg";
+import primePng from "../../assets/images/prime.png";
+import kaizorakdevOgg from "../../assets/sounds/kaizorakdev.ogg";
+import ikymaxOgg from "../../assets/sounds/ikymax.ogg";
+import cryptkeeperPng from "../../assets/images/cryptkeeper.png";
+import nickJpg from "../../assets/images/nick.jpg";
 
 // ── Constants ──────────────────────────────────────────────────
 

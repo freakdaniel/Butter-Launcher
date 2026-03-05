@@ -1,6 +1,6 @@
-import butterLogo from "../assets/butter-logo.png";
-import butterBg from "../assets/butter-bg.png";
-import butterLauncherOgg from "../assets/butterlauncher.ogg";
+import butterLogo from "../assets/images/butter-logo.png";
+import butterBg from "../assets/images/butter-bg.png";
+import butterLauncherOgg from "../assets/sounds/butterlauncher.ogg";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Text } from "@chakra-ui/react";

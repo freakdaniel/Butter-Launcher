@@ -2,6 +2,7 @@
    Butter Launcher — Global Styles (no Tailwind)
    Chakra UI handles the design system.
    ========================================== */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap');
 
 /* Electron window drag regions */
 #frame {
@@ -180,57 +181,13 @@ img { -webkit-user-drag:none; user-select:none; }
 .font-semibold  { font-weight:600 }
 
 /* ==========================================
-   Launcher navigation buttons
+   Launcher navigation — pulse animation for
+   running-server and friends-unread states.
+   Base styling is now handled by the NavBtn
+   Chakra component in Launcher.tsx.
    ========================================== */
-.btn-launcher-nav {
-  padding: 8px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(8px);
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-  cursor: pointer;
-  font-family: inherit;
-}
-.btn-launcher-nav:hover {
-  background: linear-gradient(to right, #0268D4, #02D4D4);
-  border-color: rgba(96,165,250,0.7);
-  box-shadow: 0 0 18px rgba(2,104,212,0.85);
-  outline: 2px solid rgba(96,165,250,0.35);
-  outline-offset: -2px;
-}
-.btn-launcher-nav--running {
-  border-color: rgba(134,239,172,0.4);
-  box-shadow: 0 0 18px rgba(34,197,94,0.65);
-  outline: 2px solid rgba(134,239,172,0.25);
-  outline-offset: -2px;
-  animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
-}
-.btn-launcher-nav--running:hover {
-  background: linear-gradient(to right, #0268D4, #02D4D4);
-  border-color: rgba(74,222,128,0.7);
-  box-shadow: 0 0 18px rgba(34,197,94,0.65);
-}
-.btn-launcher-nav--friends-unread {
-  border-color: rgba(134,239,172,0.4);
-  box-shadow: 0 0 18px rgba(34,197,94,0.65);
-  outline: 2px solid rgba(134,239,172,0.25);
-  outline-offset: -2px;
-  animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
-}
-.btn-launcher-nav--friends-unread:hover {
-  background: linear-gradient(to right, #0268D4, #02D4D4);
-  border-color: rgba(74,222,128,0.7);
-  box-shadow: 0 0 18px rgba(34,197,94,0.65);
-}
+.animate-nav-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
 @keyframes pulse {
   0%,100% { opacity:1; }
-  50% { opacity:.75; }
+  50% { opacity:.72; }
 }
