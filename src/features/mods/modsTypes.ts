@@ -1,5 +1,5 @@
 /**
- * Mods feature — shared types and helpers extracted from ModsModal.tsx.
+ * Mods feature — shared types and helpers extracted from ModsPanel.tsx.
  */
 
 /* ------------------------------------------------------------------ */

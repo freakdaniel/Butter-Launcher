@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Box } from "@chakra-ui/react";
+import { Box, Button, Checkbox, HStack, Input, NativeSelectField, NativeSelectRoot, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import ConfirmModal from "../ConfirmModal";
 import HostServerConsoleModal from "../HostServerConsoleModal";
+import { GradientButton } from "../ui";
 
 interface HostServerPanelProps {
   hostServerStage: "root" | "local";
@@ -84,8 +85,17 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
         {hostServerStage === "root" ? (
           <>
             <Box rounded="lg" border="1px solid #2a3146" bg="rgba(31,37,56,0.7)" p={3}>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                display="block"
+                mx="auto"
+                px={4}
+                py={2}
+                borderRadius="lg"
+                fontWeight={600}
+                border="1px solid #2a3146"
+                color="#d1d5db"
+                _hover={{ bg: "whiteAlpha.50" }}
                 onClick={() => {
                   if (!hostServerWarningShownThisSession) {
                     setHostServerWarningShownThisSession(true);
@@ -99,24 +109,9 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                   setHostServerStage("local");
                   setHostServerMenuOpen(true);
                 }}
-                style={{
-                  display: "block",
-                  margin: "0 auto",
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  fontWeight: 600,
-                  border: "1px solid #2a3146",
-                  color: "#d1d5db",
-                  background: "transparent",
-                  cursor: "pointer",
-                  transition: "background 0.15s",
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
               >
                 {t("hostServerModal.localHost.button")}
-              </button>
+              </Button>
             </Box>
 
             <Box mt={3} position="relative" overflow="hidden" rounded="lg" border="1px solid rgba(96,165,250,0.3)" bg="rgba(31,37,56,0.7)" p={3} className="animate-softGlowStrong">
@@ -140,195 +135,191 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                 >
                   {t("hostServerModal.proHosting.section")} (24/7)
                 </Box>
-                <button
-                  type="button"
+                <GradientButton
+                  display="block"
+                  mx="auto"
+                  mt={3}
+                  px={5}
+                  py={2}
+                  borderRadius="lg"
+                  fontWeight={700}
+                  boxShadow="0 4px 6px rgba(0,0,0,0.3)"
                   onClick={() => void window.config.openExternal("https://www.hycloudhosting.com/gameservers/hytale?ref=butterlauncher")}
-                  style={{
-                    display: "block",
-                    margin: "12px auto 0",
-                    padding: "8px 20px",
-                    borderRadius: "8px",
-                    fontWeight: 700,
-                    color: "white",
-                    background: "linear-gradient(to right, #3b82f6, #22d3ee)",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                    transition: "all 0.15s",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(to right, #2563eb, #06b6d4)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "linear-gradient(to right, #3b82f6, #22d3ee)"; }}
                 >
                   {t("hostServerModal.proHosting.button")}
-                </button>
+                </GradientButton>
               </Box>
             </Box>
           </>
         ) : (
           <Box rounded="lg" border="1px solid #2a3146" bg="rgba(31,37,56,0.7)" p={3}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" gap={3}>
-              <Box fontSize="xs" fontWeight="semibold" color="gray.200">
+            <HStack justify="space-between" gap={3}>
+              <Text fontSize="xs" fontWeight="semibold" color="gray.200">
                 {t("hostServerModal.panel.authMode.label")}
-              </Box>
-              <select
-                value={hostServerAuthMode}
-                onChange={(e) => setHostServerAuthMode(e.target.value as "offline" | "authenticated" | "insecure")}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  background: "rgba(20,24,36,0.8)",
-                  border: "1px solid #2a3146",
-                  color: "white",
-                  fontSize: "0.875rem",
-                  outline: "none",
-                  fontFamily: "inherit",
-                  cursor: "pointer",
-                }}
-              >
-                <option value="offline">{t("hostServerModal.panel.authMode.offline")}</option>
-                <option value="authenticated">{t("hostServerModal.panel.authMode.authenticated")}</option>
-                <option value="insecure">{t("hostServerModal.panel.authMode.insecure")}</option>
-              </select>
-            </Box>
+              </Text>
+              <NativeSelectRoot size="sm" w="auto">
+                <NativeSelectField
+                  value={hostServerAuthMode}
+                  onChange={(e) => setHostServerAuthMode(e.target.value as "offline" | "authenticated" | "insecure")}
+                  bg="rgba(20,24,36,0.8)"
+                  border="1px solid #2a3146"
+                  color="white"
+                  borderRadius="lg"
+                  px={3}
+                  py={2}
+                  fontSize="sm"
+                  cursor="pointer"
+                >
+                  <option value="offline">{t("hostServerModal.panel.authMode.offline")}</option>
+                  <option value="authenticated">{t("hostServerModal.panel.authMode.authenticated")}</option>
+                  <option value="insecure">{t("hostServerModal.panel.authMode.insecure")}</option>
+                </NativeSelectField>
+              </NativeSelectRoot>
+            </HStack>
 
-            <button
-              type="button"
+            <Button
+              mt={3}
+              w="full"
+              px={3}
+              py={2}
+              borderRadius="lg"
+              border={hostServerAdvancedOpen ? "1px solid rgba(96,165,250,0.6)" : "1px solid #2a3146"}
+              bg={hostServerAdvancedOpen ? "rgba(59,130,246,0.15)" : "#23293a"}
+              color={hostServerAdvancedOpen ? "#bfdbfe" : "white"}
+              fontSize="sm"
+              fontWeight={600}
+              _hover={{ bg: hostServerAdvancedOpen ? "rgba(59,130,246,0.15)" : "#2f3650" }}
               onClick={() => setHostServerAdvancedOpen((v) => !v)}
-              style={{
-                marginTop: "12px",
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: hostServerAdvancedOpen ? "1px solid rgba(96,165,250,0.6)" : "1px solid #2a3146",
-                background: hostServerAdvancedOpen ? "rgba(59,130,246,0.15)" : "#23293a",
-                color: hostServerAdvancedOpen ? "#bfdbfe" : "white",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-                fontWeight: 600,
-                transition: "all 0.15s",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => { if (!hostServerAdvancedOpen) (e.currentTarget as HTMLButtonElement).style.background = "#2f3650"; }}
-              onMouseLeave={(e) => { if (!hostServerAdvancedOpen) (e.currentTarget as HTMLButtonElement).style.background = "#23293a"; }}
             >
               {t("hostServerModal.panel.advanced.toggle")}
-            </button>
+            </Button>
 
             {hostServerAdvancedOpen ? (
               <Box mt={3} display="flex" flexDir="column" gap={2}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  w="full"
+                  px={3}
+                  py={2}
+                  borderRadius="lg"
+                  border="1px solid #2a3146"
+                  color="#d1d5db"
+                  fontSize="sm"
+                  fontWeight={600}
+                  _hover={{ bg: "whiteAlpha.50" }}
+                  title={t("hostServerModal.panel.advanced.openServerFolder") as string}
                   onClick={async () => {
                     if (!isSelectedBuildInstalled()) { showSelectedBuildNotInstalledError(); return; }
                     if (!gameDir || !selected) return;
                     try { await window.ipcRenderer.invoke("host-server:open-current-folder", gameDir, selected); } catch {}
                   }}
-                  title={t("hostServerModal.panel.advanced.openServerFolder") as string}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #2a3146",
-                    background: "transparent",
-                    color: "#d1d5db",
-                    cursor: "pointer",
-                    fontSize: "0.875rem",
-                    fontWeight: 600,
-                    transition: "background 0.15s",
-                    fontFamily: "inherit",
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                 >
                   {t("hostServerModal.panel.advanced.openServerFolder")}
-                </button>
+                </Button>
 
                 {/* RAM */}
-                <Box display="flex" alignItems="center" gap={2} minW={0}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advRamEnabled} onChange={(e) => setAdvRamEnabled(e.target.checked)} />
-                  <Box w="112px" flexShrink={0} fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2} minW={0}>
+                  <Checkbox.Root checked={advRamEnabled} onCheckedChange={(e) => setAdvRamEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text w="112px" flexShrink={0} fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.ram")}
-                  </Box>
-                  <Box flex={1} minW={0} display="flex" alignItems="center" gap={1}>
-                    <input
+                  </Text>
+                  <HStack flex={1} minW={0} gap={1}>
+                    <Input
                       value={advRamMin}
                       onChange={(e) => setAdvRamMin(String(e.target.value ?? "").replace(/[^0-9]/g, ""))}
                       inputMode="numeric"
                       placeholder={t("hostServerModal.panel.advanced.min") as string}
                       disabled={!advRamEnabled}
-                      style={{
-                        width: "100%", minWidth: 0, padding: "8px 12px", borderRadius: "8px",
-                        background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                        color: "white", fontSize: "0.875rem", outline: "none",
-                        opacity: advRamEnabled ? 1 : 0.6, fontFamily: "inherit",
-                      }}
+                      size="sm"
+                      bg="rgba(20,24,36,0.8)"
+                      border="1px solid #2a3146"
+                      color="white"
+                      borderRadius="lg"
+                      opacity={advRamEnabled ? 1 : 0.6}
                     />
-                    <Box fontSize="sm" fontWeight="bold" color="gray.200" opacity={advRamEnabled ? 1 : 0.6}>G</Box>
-                  </Box>
-                  <Box flex={1} minW={0} display="flex" alignItems="center" gap={1}>
-                    <input
+                    <Text fontSize="sm" fontWeight="bold" color="gray.200" opacity={advRamEnabled ? 1 : 0.6}>G</Text>
+                  </HStack>
+                  <HStack flex={1} minW={0} gap={1}>
+                    <Input
                       value={advRamMax}
                       onChange={(e) => setAdvRamMax(String(e.target.value ?? "").replace(/[^0-9]/g, ""))}
                       inputMode="numeric"
                       placeholder={t("hostServerModal.panel.advanced.max") as string}
                       disabled={!advRamEnabled}
-                      style={{
-                        width: "100%", minWidth: 0, padding: "8px 12px", borderRadius: "8px",
-                        background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                        color: "white", fontSize: "0.875rem", outline: "none",
-                        opacity: advRamEnabled ? 1 : 0.6, fontFamily: "inherit",
-                      }}
+                      size="sm"
+                      bg="rgba(20,24,36,0.8)"
+                      border="1px solid #2a3146"
+                      color="white"
+                      borderRadius="lg"
+                      opacity={advRamEnabled ? 1 : 0.6}
                     />
-                    <Box fontSize="sm" fontWeight="bold" color="gray.200" opacity={advRamEnabled ? 1 : 0.6}>G</Box>
-                  </Box>
-                </Box>
+                    <Text fontSize="sm" fontWeight="bold" color="gray.200" opacity={advRamEnabled ? 1 : 0.6}>G</Text>
+                  </HStack>
+                </HStack>
 
                 {/* No AOT */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advNoAotEnabled} onChange={(e) => setAdvNoAotEnabled(e.target.checked)} />
-                  <Box fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2}>
+                  <Checkbox.Root checked={advNoAotEnabled} onCheckedChange={(e) => setAdvNoAotEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.noAot")}
-                  </Box>
-                </Box>
+                  </Text>
+                </HStack>
 
                 {/* Custom JVM Args */}
-                <Box display="flex" alignItems="center" gap={2} minW={0}>
-                  <Box w="112px" flexShrink={0} fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2} minW={0}>
+                  <Text w="112px" flexShrink={0} fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.customJvmArgs")}
-                  </Box>
-                  <input
+                  </Text>
+                  <Input
                     value={advCustomJvmArgs}
                     onChange={(e) => setAdvCustomJvmArgs(e.target.value)}
                     placeholder={t("hostServerModal.panel.advanced.customJvmArgsExample") as string}
-                    style={{
-                      flex: 1, minWidth: 0, padding: "8px 12px", borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                      color: "white", fontSize: "0.875rem", outline: "none", fontFamily: "inherit",
-                    }}
+                    flex={1}
+                    size="sm"
+                    bg="rgba(20,24,36,0.8)"
+                    border="1px solid #2a3146"
+                    color="white"
+                    borderRadius="lg"
                   />
-                </Box>
+                </HStack>
 
                 {/* Custom Assets */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advAssetsEnabled} onChange={(e) => setAdvAssetsEnabled(e.target.checked)} />
-                  <Box w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2}>
+                  <Checkbox.Root checked={advAssetsEnabled} onCheckedChange={(e) => setAdvAssetsEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.customAssets")}
-                  </Box>
-                  <input
+                  </Text>
+                  <Input
                     value={advAssetsPath}
                     onChange={(e) => setAdvAssetsPath(e.target.value)}
                     disabled={!advAssetsEnabled}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                      color: "white", fontSize: "0.875rem", outline: "none",
-                      opacity: advAssetsEnabled ? 1 : 0.6, fontFamily: "inherit",
-                    }}
+                    flex={1}
+                    size="sm"
+                    bg="rgba(20,24,36,0.8)"
+                    border="1px solid #2a3146"
+                    color="white"
+                    borderRadius="lg"
+                    opacity={advAssetsEnabled ? 1 : 0.6}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    px={3}
+                    borderRadius="lg"
+                    border="1px solid #2a3146"
+                    color="#d1d5db"
                     disabled={!advAssetsEnabled}
+                    opacity={advAssetsEnabled ? 1 : 0.6}
+                    _hover={{ bg: "whiteAlpha.50" }}
                     onClick={async () => {
                       if (!advAssetsEnabled) return;
                       try {
@@ -336,36 +327,42 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                         if (res?.ok && res.path) setAdvAssetsPath(res.path);
                       } catch {}
                     }}
-                    style={{
-                      padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146",
-                      background: "transparent", color: "#d1d5db", cursor: advAssetsEnabled ? "pointer" : "not-allowed",
-                      opacity: advAssetsEnabled ? 1 : 0.6, fontSize: "0.875rem", transition: "background 0.15s", fontFamily: "inherit",
-                    }}
                   >
                     {t("hostServerModal.panel.advanced.chooseFile")}
-                  </button>
-                </Box>
+                  </Button>
+                </HStack>
 
                 {/* Universe */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advUniverseEnabled} onChange={(e) => setAdvUniverseEnabled(e.target.checked)} />
-                  <Box w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2}>
+                  <Checkbox.Root checked={advUniverseEnabled} onCheckedChange={(e) => setAdvUniverseEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.universe")}
-                  </Box>
-                  <input
+                  </Text>
+                  <Input
                     value={advUniversePath}
                     onChange={(e) => setAdvUniversePath(e.target.value)}
                     disabled={!advUniverseEnabled}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                      color: "white", fontSize: "0.875rem", outline: "none",
-                      opacity: advUniverseEnabled ? 1 : 0.6, fontFamily: "inherit",
-                    }}
+                    flex={1}
+                    size="sm"
+                    bg="rgba(20,24,36,0.8)"
+                    border="1px solid #2a3146"
+                    color="white"
+                    borderRadius="lg"
+                    opacity={advUniverseEnabled ? 1 : 0.6}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    px={3}
+                    borderRadius="lg"
+                    border="1px solid #2a3146"
+                    color="#d1d5db"
                     disabled={!advUniverseEnabled}
+                    opacity={advUniverseEnabled ? 1 : 0.6}
+                    _hover={{ bg: "whiteAlpha.50" }}
                     onClick={async () => {
                       if (!advUniverseEnabled) return;
                       try {
@@ -377,36 +374,42 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                         }
                       } catch {}
                     }}
-                    style={{
-                      padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146",
-                      background: "transparent", color: "#d1d5db", cursor: advUniverseEnabled ? "pointer" : "not-allowed",
-                      opacity: advUniverseEnabled ? 1 : 0.6, fontSize: "0.875rem", transition: "background 0.15s", fontFamily: "inherit",
-                    }}
                   >
                     {t("hostServerModal.panel.advanced.chooseFolder")}
-                  </button>
-                </Box>
+                  </Button>
+                </HStack>
 
                 {/* Mods */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advModsEnabled} onChange={(e) => setAdvModsEnabled(e.target.checked)} />
-                  <Box w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2}>
+                  <Checkbox.Root checked={advModsEnabled} onCheckedChange={(e) => setAdvModsEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.mods")}
-                  </Box>
-                  <input
+                  </Text>
+                  <Input
                     value={advModsPath}
                     onChange={(e) => setAdvModsPath(e.target.value)}
                     disabled={!advModsEnabled}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                      color: "white", fontSize: "0.875rem", outline: "none",
-                      opacity: advModsEnabled ? 1 : 0.6, fontFamily: "inherit",
-                    }}
+                    flex={1}
+                    size="sm"
+                    bg="rgba(20,24,36,0.8)"
+                    border="1px solid #2a3146"
+                    color="white"
+                    borderRadius="lg"
+                    opacity={advModsEnabled ? 1 : 0.6}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    px={3}
+                    borderRadius="lg"
+                    border="1px solid #2a3146"
+                    color="#d1d5db"
                     disabled={!advModsEnabled}
+                    opacity={advModsEnabled ? 1 : 0.6}
+                    _hover={{ bg: "whiteAlpha.50" }}
                     onClick={async () => {
                       if (!advModsEnabled) return;
                       try {
@@ -418,36 +421,42 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                         }
                       } catch {}
                     }}
-                    style={{
-                      padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146",
-                      background: "transparent", color: "#d1d5db", cursor: advModsEnabled ? "pointer" : "not-allowed",
-                      opacity: advModsEnabled ? 1 : 0.6, fontSize: "0.875rem", transition: "background 0.15s", fontFamily: "inherit",
-                    }}
                   >
                     {t("hostServerModal.panel.advanced.chooseFolder")}
-                  </button>
-                </Box>
+                  </Button>
+                </HStack>
 
                 {/* Early Plugins */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <input type="checkbox" style={{ width: 16, height: 16 }} checked={advEarlyPluginsEnabled} onChange={(e) => setAdvEarlyPluginsEnabled(e.target.checked)} />
-                  <Box w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
+                <HStack gap={2}>
+                  <Checkbox.Root checked={advEarlyPluginsEnabled} onCheckedChange={(e) => setAdvEarlyPluginsEnabled(!!e.checked)} size="sm">
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control />
+                  </Checkbox.Root>
+                  <Text w="112px" fontSize="xs" fontWeight="semibold" color="gray.200">
                     {t("hostServerModal.panel.advanced.earlyPlugins")}
-                  </Box>
-                  <input
+                  </Text>
+                  <Input
                     value={advEarlyPluginsPath}
                     onChange={(e) => setAdvEarlyPluginsPath(e.target.value)}
                     disabled={!advEarlyPluginsEnabled}
-                    style={{
-                      flex: 1, padding: "8px 12px", borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146",
-                      color: "white", fontSize: "0.875rem", outline: "none",
-                      opacity: advEarlyPluginsEnabled ? 1 : 0.6, fontFamily: "inherit",
-                    }}
+                    flex={1}
+                    size="sm"
+                    bg="rgba(20,24,36,0.8)"
+                    border="1px solid #2a3146"
+                    color="white"
+                    borderRadius="lg"
+                    opacity={advEarlyPluginsEnabled ? 1 : 0.6}
                   />
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    px={3}
+                    borderRadius="lg"
+                    border="1px solid #2a3146"
+                    color="#d1d5db"
                     disabled={!advEarlyPluginsEnabled}
+                    opacity={advEarlyPluginsEnabled ? 1 : 0.6}
+                    _hover={{ bg: "whiteAlpha.50" }}
                     onClick={async () => {
                       if (!advEarlyPluginsEnabled) return;
                       try {
@@ -459,35 +468,39 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                         }
                       } catch {}
                     }}
-                    style={{
-                      padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146",
-                      background: "transparent", color: "#d1d5db", cursor: advEarlyPluginsEnabled ? "pointer" : "not-allowed",
-                      opacity: advEarlyPluginsEnabled ? 1 : 0.6, fontSize: "0.875rem", transition: "background 0.15s", fontFamily: "inherit",
-                    }}
                   >
                     {t("hostServerModal.panel.advanced.chooseFolder")}
-                  </button>
-                </Box>
+                  </Button>
+                </HStack>
               </Box>
             ) : null}
 
-            <Box mt={3} display="flex" alignItems="center" justifyContent="space-between" gap={2}>
-              <button
-                type="button"
+            <HStack mt={3} justify="space-between" gap={2}>
+              <Button
+                variant="ghost"
+                px={3}
+                py={2}
+                borderRadius="lg"
+                border="1px solid #2a3146"
+                color="#d1d5db"
+                fontSize="sm"
+                fontWeight={600}
+                _hover={{ bg: "whiteAlpha.50" }}
                 onClick={() => setHostServerConsoleOpen(true)}
-                style={{
-                  padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146",
-                  background: "transparent", color: "#d1d5db", cursor: "pointer",
-                  fontSize: "0.875rem", fontWeight: 600, transition: "background 0.15s", fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
               >
                 {t("hostServerModal.panel.actions.showConsole")}
-              </button>
+              </Button>
 
-              <button
-                type="button"
+              <Button
+                px={4}
+                py={2}
+                borderRadius="lg"
+                color="white"
+                fontWeight={800}
+                boxShadow="0 4px 6px rgba(0,0,0,0.3)"
+                border="1px solid rgba(255,255,255,0.1)"
+                bg={hostServerRunning ? "#dc2626" : "#16a34a"}
+                _hover={{ bg: hostServerRunning ? "#b91c1c" : "#15803d" }}
                 onClick={() => {
                   if (!hostServerRunning) {
                     if (!isSelectedBuildInstalled()) { showSelectedBuildNotInstalledError(); return; }
@@ -552,23 +565,12 @@ const HostServerPanel: React.FC<HostServerPanelProps> = ({
                     });
                   }
                 }}
-                style={{
-                  padding: "8px 16px", borderRadius: "8px",
-                  color: "white", fontWeight: 800, transition: "all 0.15s",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  background: hostServerRunning ? "#dc2626" : "#16a34a",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = hostServerRunning ? "#b91c1c" : "#15803d"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = hostServerRunning ? "#dc2626" : "#16a34a"; }}
               >
                 {hostServerRunning
                   ? t("hostServerModal.panel.actions.stopServer")
                   : t("hostServerModal.panel.actions.startServer")}
-              </button>
-            </Box>
+              </Button>
+            </HStack>
           </Box>
         )}
       </Box>

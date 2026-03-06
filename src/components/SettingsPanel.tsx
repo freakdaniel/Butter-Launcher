@@ -16,6 +16,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { SectionRow, PanelContainer, PageHeader } from "./ui";
 
 type BackgroundType = "none" | "image" | "video";
 
@@ -30,47 +31,10 @@ const LANGUAGES = {
 
 const RTL_LANGUAGES = ["ar"] as const;
 
-// Flat list row matching Yandex Music style
-const SettingRow: React.FC<{
-  label: string;
-  hint?: string;
-  onClick?: () => void;
-  right?: React.ReactNode;
-  disabled?: boolean;
-  danger?: boolean;
-  noBorder?: boolean;
-}> = ({ label, hint, onClick, right, disabled, danger, noBorder }) => (
-  <HStack
-    py={4}
-    px={3}
-    justify="space-between"
-    align="center"
-    borderBottom={noBorder ? "none" : "1px solid"}
-    borderColor="rgba(255,255,255,0.06)"
-    cursor={onClick && !disabled ? "pointer" : "default"}
-    opacity={disabled ? 0.4 : 1}
-    transition="background 0.12s"
-    borderRadius="md"
-    _hover={onClick && !disabled ? { bg: "rgba(255,255,255,0.04)" } : {}}
-    onClick={onClick && !disabled ? onClick : undefined}
-  >
-    <Box flex={1} minW={0}>
-      <Text fontSize="15px" fontWeight="500" lineHeight="1.4" color={danger ? "#f87171" : "rgba(255,255,255,0.92)"}>
-        {label}
-      </Text>
-      {hint && (
-        <Text fontSize="12px" lineHeight="1.5" color="rgba(255,255,255,0.38)" mt={1} wordBreak="break-all">
-          {hint}
-        </Text>
-      )}
-    </Box>
-    {right !== undefined && (
-      <Box flexShrink={0} ml={4}>{right}</Box>
-    )}
-  </HStack>
-);
+// SettingRow is now the shared SectionRow component.
+const SettingRow = SectionRow;
 
-const SettingsModal: React.FC<{
+const SettingsPanel: React.FC<{
   onLogout?: () => void;
   onBack?: () => void;
 }> = ({ onLogout, onBack }) => {
@@ -345,81 +309,15 @@ const SettingsModal: React.FC<{
   };
 
   return (
-    <Box
-      position="relative"
-      w="full"
-      h="full"
-      bg="transparent"
-      px={8}
-      py={6}
-      display="flex"
-      flexDir="column"
-      overflow="hidden"
-      dir={isRTL ? "rtl" : "ltr"}
-    >
+    <PanelContainer dir={isRTL ? "rtl" : "ltr"}>
       {/* Title row with back button / breadcrumb */}
-      <HStack mb={6} gap={3} align="center">
-        {(onBack || creditsSubPage) && (
-          <IconButton
-            aria-label={t("common.back")}
-            variant="ghost"
-            size="sm"
-            w="36px"
-            h="36px"
-            minW="36px"
-            borderRadius="full"
-            bg="rgba(255,255,255,0.08)"
-            color="white"
-            _hover={{ bg: "rgba(255,255,255,0.14)" }}
-            flexShrink={0}
-            onClick={creditsSubPage ? () => setCreditsSubPage(false) : onBack}
-          >
-            <IconChevronLeft size={20} />
-          </IconButton>
-        )}
-        {/* Title — always 28px, no size jump. Breadcrumb fades in-place. */}
-        <Box display="flex" alignItems="baseline" gap="6px" overflow="hidden">
-          <Text
-            fontSize="28px"
-            fontWeight="700"
-            letterSpacing="-0.02em"
-            color={creditsSubPage ? "rgba(255,255,255,0.35)" : "white"}
-            style={{
-              fontFamily: "'Montserrat', 'Inter', sans-serif",
-              transition: "color 0.2s ease",
-              cursor: creditsSubPage ? "pointer" : "default",
-              flexShrink: 0,
-            }}
-            onClick={creditsSubPage ? () => setCreditsSubPage(false) : undefined}
-            _hover={creditsSubPage ? { color: "rgba(255,255,255,0.6)" } : {}}
-          >
-            {t("settings.title")}
-          </Text>
-          <Box
-            display="inline-flex"
-            alignItems="baseline"
-            gap="6px"
-            style={{
-              opacity: creditsSubPage ? 1 : 0,
-              transform: creditsSubPage ? "translateX(0px)" : "translateX(-8px)",
-              transition: "opacity 0.22s ease, transform 0.22s ease",
-              pointerEvents: "none",
-            }}
-          >
-            <Text as="span" fontSize="26px" fontWeight="300" color="rgba(255,255,255,0.25)" lineHeight={1}>›</Text>
-            <Text
-              as="span"
-              fontSize="28px"
-              fontWeight="700"
-              letterSpacing="-0.02em"
-              color="white"
-              style={{ fontFamily: "'Montserrat', 'Inter', sans-serif" }}
-            >
-              {t("settings.credits.label")}
-            </Text>
-          </Box>
-        </Box>
-      </HStack>
+      <PageHeader
+        title={t("settings.title")}
+        onBack={onBack}
+        backLabel={t("common.back")}
+        breadcrumb={creditsSubPage ? t("settings.credits.label") : null}
+        onBreadcrumbBack={() => setCreditsSubPage(false)}
+      />
 
       {/* Scrollable body */}
       {creditsSubPage ? (
@@ -699,8 +597,8 @@ const SettingsModal: React.FC<{
         onCancel={() => setRemoveOnlinePatchOpen(false)}
         onConfirm={() => { setRemoveOnlinePatchOpen(false); doRemoveOnlinePatch(); }}
       />
-    </Box>
+    </PanelContainer>
   );
 };
 
-export default SettingsModal;
+export default SettingsPanel;

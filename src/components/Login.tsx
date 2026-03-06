@@ -14,6 +14,7 @@ import {
   HStack,
   Spinner,
 } from "@chakra-ui/react";
+import { GradientButton } from "./ui";
 
 const Login: React.FC<{ onLogin: (username: string) => void; hasCustomBg?: boolean }> = ({
   onLogin,
@@ -330,11 +331,13 @@ const Login: React.FC<{ onLogin: (username: string) => void; hasCustomBg?: boole
       >
         {/* Logo */}
         <Box mb={10} display="flex" justifyContent="center">
-          <img
+          <Box
+            as="img"
             src={butterLogo}
             alt="Logo"
             draggable={false}
-            style={{ width: 180, userSelect: "none" }}
+            w="180px"
+            userSelect="none"
           />
         </Box>
 
@@ -344,17 +347,14 @@ const Login: React.FC<{ onLogin: (username: string) => void; hasCustomBg?: boole
             <Text color="whiteAlpha.600" fontSize="sm" textAlign="center">
               {t("login.accountTypePrompt")}
             </Text>
-            <Button
+            <GradientButton
               w="full"
               h={11}
               fontWeight="semibold"
-              color="white"
-              style={{ background: "linear-gradient(90deg,#0268D4,#02D4D4)" }}
-              _hover={{ opacity: 0.9 }}
               onClick={() => persistAccountType("premium")}
             >
               {t("login.premium")}
-            </Button>
+            </GradientButton>
             {allowAlternative && alternativeLabel ? (
               <Button
                 w="full"
@@ -374,23 +374,22 @@ const Login: React.FC<{ onLogin: (username: string) => void; hasCustomBg?: boole
             <Text color="whiteAlpha.600" fontSize="sm" textAlign="center">
               {t("login.premiumPrompt")}
             </Text>
-            <Button
+            <GradientButton
               w="full"
               h={11}
               fontWeight="semibold"
-              color="white"
               disabled={premiumWorking}
-              style={premiumWorking ? { background: "rgba(255,255,255,0.08)" } : { background: "linear-gradient(90deg,#0268D4,#02D4D4)" }}
+              style={premiumWorking ? { background: "rgba(255,255,255,0.08)" } : undefined}
               _hover={premiumWorking ? {} : { opacity: 0.9 }}
               onClick={startPremiumLogin}
             >
               {premiumWorking ? (
                 <HStack>
                   <Spinner size="sm" color="white" />
-                  <span>{t("common.working")}</span>
+                  <Box as="span">{t("common.working")}</Box>
                 </HStack>
               ) : t("login.premiumLogin")}
-            </Button>
+            </GradientButton>
             {premiumError ? (
               <Text color="red.400" fontSize="xs">{premiumError}</Text>
             ) : null}
@@ -459,18 +458,15 @@ const Login: React.FC<{ onLogin: (username: string) => void; hasCustomBg?: boole
                 <Text px={1} color="whiteAlpha.500" fontSize="xs">
                   {t("login.characters", { current: nick.length, max: MAX_NICK_LEN }) as string}
                 </Text>
-                <Button
+                <GradientButton
                   type="submit"
                   w="full"
                   h={11}
                   fontWeight="semibold"
-                  color="white"
                   mt={1}
-                  style={{ background: "linear-gradient(90deg,#0268D4,#02D4D4)" }}
-                  _hover={{ opacity: 0.9 }}
                 >
                   {t("login.enter")}
-                </Button>
+                </GradientButton>
               </Box>
             </VStack>
             <Button

@@ -18,7 +18,7 @@ const isWikiUrl = (raw: string): boolean => {
   } catch { return false; }
 };
 
-const WikiModal: React.FC<{
+const WikiPanel: React.FC<{
   initialUrl?: string | null;
   onClose: (lastUrl: string | null) => void;
   onUrlChange?: (url: string) => void;
@@ -218,4 +218,4 @@ const WikiModal: React.FC<{
   );
 };
 
-export default WikiModal;
+export default WikiPanel;

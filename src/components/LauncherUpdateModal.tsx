@@ -10,6 +10,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { ModalBackdrop, ModalCard, GradientButton } from "./ui";
 
 export type LauncherUpdateInfo = {
   currentVersion: string;
@@ -61,28 +62,8 @@ const LauncherUpdateModal: React.FC<{
   if (!open) return null;
 
   return (
-    <Box
-      className="glass-backdrop animate-fade-in"
-      position="fixed"
-      inset={0}
-      zIndex={10050}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-    >
-      <Box
-        className="animate-settings-in"
-        position="relative"
-        w="full"
-        maxW="2xl"
-        rounded="xl"
-        shadow="2xl"
-        bg="linear-gradient(to bottom, rgba(27,32,48,0.97), rgba(20,24,36,0.97))"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        p={6}
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
+    <ModalBackdrop zIndex={10050}>
+      <ModalCard maxW="2xl">
         <HStack justify="space-between" align="flex-start">
           <VStack align="flex-start" gap={1}>
             <Text color="white" fontWeight="extrabold" fontSize="xl">{title}</Text>
@@ -143,19 +124,15 @@ const LauncherUpdateModal: React.FC<{
           >
             {t("launcherUpdate.notNow")}
           </Button>
-          <Button
+          <GradientButton
             size="sm"
-            color="white"
-            fontWeight="bold"
-            style={{ background: "linear-gradient(90deg,#0268D4,#02D4D4)" }}
-            _hover={{ opacity: 0.9 }}
             onClick={() => onUpdate(dontRemindAgain)}
           >
             {t("launcherUpdate.update")}
-          </Button>
+          </GradientButton>
         </HStack>
-      </Box>
-    </Box>
+      </ModalCard>
+    </ModalBackdrop>
   );
 };
 

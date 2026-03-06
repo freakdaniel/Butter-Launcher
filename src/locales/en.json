@@ -34,6 +34,16 @@
     "copied": "Copied",
     "closeDownloadWarning": "Closing the launcher will cancel the current download. Are you sure you want to close it?"
   },
+  "chat": {
+    "channels": "Channels",
+    "globalChat": "Global Chat",
+    "directMessages": "Direct Messages",
+    "online": "Online",
+    "typing": "{{user}} is typing...",
+    "placeholder": "Write to {{target}}...",
+    "send": "Send",
+    "emoji": "Emoji"
+  },
   "supportTicket": {
     "devAssistSoon": "A developer will assist you shortly.",
     "invalidOrExpired": "Invalid or expired ticket.",

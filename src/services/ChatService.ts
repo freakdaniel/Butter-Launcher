@@ -21,6 +21,10 @@ export type MatchaMe = {
   avatarHash?: string;
   avatarMode?: "hytale" | "custom" | string;
   avatarDisabled?: boolean;
+  settings?: {
+    hideServerIp?: boolean;
+    [key: string]: unknown;
+  };
 };
 
 export type MatchaPublicProfile = {
@@ -71,6 +75,7 @@ export type MsgRow = {
   replyToFromHandle?: string;
   replyToSnippet?: string;
   createdAt: string;
+  meta?: Record<string, unknown>;
 };
 
 export type ReportCategory =

@@ -5,12 +5,12 @@ import { useUserContext } from "../hooks/userContext";
 import butterBg from "../assets/images/butter-bg.jpeg";
 import butterLogo from "../assets/images/butter-logo.png";
 import testAvatar from "../assets/images/test.png";
-import SettingsModal from "./SettingsModal";
-import ModsModal from "./ModsModal";
-import ServersModal from "./ServersModal";
-import WikiModal from "./WikiModal";
+import SettingsPanel from "./SettingsPanel";
+import ModsPanel from "./ModsPanel";
+import ServersPanel from "./ServersPanel";
+import WikiPanel from "./WikiPanel";
 import MatchaTermsModal from "./MatchaTermsModal";
-import FriendsMenu from "./FriendsMenu";
+import MatchaPanel from "./MatchaPanel";
 import DiscordLogo from "../assets/icons/discord.svg";
 import MatchaIcon from "../assets/icons/matcha_bold.svg";
 import PatreonLogo from "../assets/images/patreon.png";
@@ -47,47 +47,9 @@ import {
   parseNewsContent,
 } from "../features/game";
 import type { NewsItem, NewsFeed, HytaleFeedItem } from "../features/game";
+import { NavButton, SocialIconButton, ModalBackdrop, ModalCard } from "./ui";
 
-// Reusable nav button — flat Yandex-Music-style: gray inactive, white active, subtle hover.
-const NavBtn: React.FC<{
-  children: React.ReactNode;
-  onClick?: () => void;
-  title?: string;
-  running?: boolean;
-  unread?: boolean;
-  active?: boolean;
-  className?: string; [key: string]: any;
-}> = ({ running, unread, active, children, className, ...props }) => (
-  <Button
-    variant="ghost"
-    px={3}
-    gap={2.5}
-    h="38px"
-    bg="transparent"
-    borderRadius="lg"
-    color={
-      running || unread ? "#86efac"
-      : active ? "#ffffff"
-      : "#686868"
-    }
-    fontWeight={active ? "600" : "400"}
-    fontSize="sm"
-    letterSpacing="0"
-    boxShadow="none"
-    transition="color 0.15s"
-    className={(running || unread ? "animate-nav-pulse " : "") + (className ?? "")}
-    _hover={{
-      bg: "transparent",
-      color: running || unread ? "#86efac"
-        : active ? "#ffffff"
-        : "#b0b0b0",
-    }}
-    _active={{ bg: "rgba(255,255,255,0.05)" }}
-    {...props}
-  >
-    {children}
-  </Button>
-);
+// NavButton imported from ./ui
 
 // Launcher: a single component boldly pretending it isn't a small app.
 
@@ -776,15 +738,19 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
                 >
                   {t("launcher.offlineMode")}
                 </Box>
-                <button
+                <Button
                   type="button"
                   className="no-drag"
+                  variant="ghost"
+                  size="xs"
+                  color="whiteAlpha.700"
+                  _hover={{ color: "white" }}
                   onClick={() => reconnect()}
                   disabled={checkingUpdates}
                   title={t("common.retryConnection") as string}
                 >
                   {t("common.reconnect")}
-                </button>
+                </Button>
               </Box>
             ) : null
           }
@@ -803,7 +769,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
       >
         <VStack align="stretch" gap={3}>
           <Text
-            style={{ fontFamily: "'Montserrat', 'Inter', sans-serif" }}
+            fontFamily="'Montserrat', 'Inter', sans-serif"
             fontSize="15px"
             fontWeight="700"
             letterSpacing="-0.01em"
@@ -815,17 +781,17 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
           </Text>
           
 
-          <NavBtn justifyContent="flex-start" w="full" active={activeView === "wiki"} onClick={() => setActiveView("wiki")}>
+          <NavButton justifyContent="flex-start" w="full" active={activeView === "wiki"} onClick={() => setActiveView("wiki")}>
             <IconWorld size={18} /> {t("launcher.buttons.wiki")}
-          </NavBtn>
+          </NavButton>
           {!offlineMode ? (
-            <NavBtn justifyContent="flex-start" w="full" active={activeView === "servers"} onClick={() => setActiveView("servers")}>
+            <NavButton justifyContent="flex-start" w="full" active={activeView === "servers"} onClick={() => setActiveView("servers")}>
               <IconServer size={18} /> {t("launcher.buttons.servers")}
-            </NavBtn>
+            </NavButton>
           ) : null}
 
           <Box position="relative" ref={hostServerMenuRef}>
-            <NavBtn
+            <NavButton
               justifyContent="flex-start" w="full"
               running={hostServerRunning}
               onClick={() => {
@@ -841,7 +807,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
               }}
             >
               <IconServerCog size={20} /> {t("launcher.buttons.hostServer")}
-            </NavBtn>
+            </NavButton>
 
             {hostServerMenuOpen ? (
               <Box position="absolute" left="100%" top={0} ml={2} zIndex={50}>
@@ -863,77 +829,50 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
             ) : null}
           </Box>
 
-          <NavBtn justifyContent="flex-start" w="full" active={activeView === "mods"} onClick={() => setActiveView("mods")}>
+          <NavButton justifyContent="flex-start" w="full" active={activeView === "mods"} onClick={() => setActiveView("mods")}>
             <IconPuzzle size={18} /> {t("launcher.buttons.mods")}
-          </NavBtn>
+          </NavButton>
 
           {!offlineMode ? (
-            <NavBtn
+            <NavButton
               justifyContent="flex-start" w="full"
               unread={friendsHasUnread}
               active={activeView === "matcha"}
               onClick={() => setActiveView(activeView === "matcha" ? "home" : "matcha")}
             >
-              <img
+              <Box
+                as="img"
                 src={MatchaIcon} alt="" aria-hidden="true"
-                style={{
-                  width: 18, height: 18, flexShrink: 0,
-                  opacity: (activeView === "matcha" || friendsHasUnread) ? 1 : 0.38,
-                  transition: "opacity 0.15s",
-                }}
+                w="18px" h="18px" flexShrink={0}
+                opacity={(activeView === "matcha" || friendsHasUnread) ? 1 : 0.38}
+                transition="opacity 0.15s"
               />
               Matcha!
-            </NavBtn>
+            </NavButton>
           ) : null}
         </VStack>
 
         <VStack gap={4}>
-                    {/* Socials */}
+          {/* Socials */}
           <HStack gap={2} flexWrap="wrap">
-            <button
-              type="button" title="Global Chat"
-              onClick={() => openMatchaGlobalChat?.()}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
+            <SocialIconButton title="Global Chat" onClick={() => openMatchaGlobalChat?.()}>
               <IconMessageCircle size={18} />
-            </button>
-            <button
-              type="button" title="Discord"
-              onClick={() => void window.config.openExternal("https://discord.com/invite/fZgjHwv5pA")}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
-              <img src={DiscordLogo} alt="Discord" width={18} height={18} />
-            </button>
-            <button
-              type="button" title="Web"
-              onClick={() => void window.config.openExternal("https://butterlauncher.tech/")}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
+            </SocialIconButton>
+            <SocialIconButton title="Discord" onClick={() => void window.config.openExternal("https://discord.com/invite/fZgjHwv5pA")}>
+              <Box as="img" src={DiscordLogo} alt="Discord" w="18px" h="18px" />
+            </SocialIconButton>
+            <SocialIconButton title="Web" onClick={() => void window.config.openExternal("https://butterlauncher.tech/")}>
               <IconWorld size={18} color="white" />
-            </button>
-            <button
-              type="button" title="Patreon"
-              onClick={() => void window.config.openExternal("https://www.patreon.com/c/ButterLauncher")}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
-              <img src={PatreonLogo} alt="Patreon" style={{ width: 18, height: 18 }} />
-            </button>
-            <button
-              title="Instagram"
-              type="button"
-              onClick={() => window.config.openExternal("https://www.instagram.com/butterlauncher_official")}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
+            </SocialIconButton>
+            <SocialIconButton title="Patreon" onClick={() => void window.config.openExternal("https://www.patreon.com/c/ButterLauncher")}>
+              <Box as="img" src={PatreonLogo} alt="Patreon" w="18px" h="18px" />
+            </SocialIconButton>
+            <SocialIconButton title="Instagram" onClick={() => window.config.openExternal("https://www.instagram.com/butterlauncher_official")}>
               <IconBrandInstagram size={18} color="white" />
-            </button>
-            <button
-              title="X"
-              type="button"
-              onClick={() => window.config.openExternal("https://x.com/Butter_Launcher/")}
-              style={{ padding: "8px", borderRadius: "50%", background: "rgba(255,255,255,0.05)" }}
-            >
+            </SocialIconButton>
+            <SocialIconButton title="X" onClick={() => window.config.openExternal("https://x.com/Butter_Launcher/")}>
               <IconBrandX size={18} color="white" />
-            </button>
+            </SocialIconButton>
           </HStack>
 
           {/* Profile */}
@@ -948,7 +887,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
             onClick={() => setActiveView("settings")}
           >
             <Box w="32px" h="32px" borderRadius="full" overflow="hidden" bg="gray.700">
-               <img src={testAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+               <Box as="img" src={testAvatar} w="full" h="full" objectFit="cover" />
             </Box>
             <Box flex="1" overflow="hidden">
               <Box display="flex" alignItems="center" gap="4px">
@@ -970,7 +909,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
                 >
                   {hideUsername ? <IconEyeOff size={13} /> : <IconEye size={13} />}
                 </Box>
-                <Text fontSize="sm" fontWeight="bold" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <Text fontSize="sm" fontWeight="bold" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
                   {hideUsername ? "••••••" : (username || "User")}
                 </Text>
               </Box>
@@ -1000,28 +939,28 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
         {/* Settings view */}
         {activeView === "settings" && (
           <Box position="absolute" inset={0} overflow="hidden">
-            <SettingsModal onLogout={handleLogout} onBack={() => setActiveView("home")} />
+            <SettingsPanel onLogout={handleLogout} onBack={() => setActiveView("home")} />
           </Box>
         )}
 
         {/* Mods view */}
         {activeView === "mods" && (
           <Box position="absolute" inset={0} overflow="hidden">
-            <ModsModal />
+            <ModsPanel />
           </Box>
         )}
 
         {/* Servers view */}
         {activeView === "servers" && (
           <Box position="absolute" inset={0} overflow="hidden">
-            <ServersModal />
+            <ServersPanel />
           </Box>
         )}
 
         {/* Wiki view */}
         {activeView === "wiki" && (
           <Box position="absolute" inset={0} overflow="hidden">
-            <WikiModal
+            <WikiPanel
               initialUrl={wikiLastUrl}
               onClose={(lastUrl) => {
                 if (typeof lastUrl === "string") setWikiLastUrl(lastUrl);
@@ -1034,7 +973,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
         {/* Matcha (Friends) view */}
         {activeView === "matcha" && (
           <Box position="absolute" inset={0} overflow="hidden">
-            <FriendsMenu
+            <MatchaPanel
               open={true}
               inline={true}
               onClose={() => setActiveView("home")}
@@ -1054,7 +993,7 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
           backgroundImage={`url(${butterBg})`}
           backgroundSize="cover"
           backgroundPosition="center"
-          style={{ display: activeView === "home" ? "block" : "none" }}
+          display={activeView === "home" ? "block" : "none"}
         >
           <Box position="absolute" inset={0} bg="rgba(0,0,0,0.3)" zIndex={0} />
           <Box position="absolute" bottom={0} left={0} right={0} h="65%" bgGradient="linear(to-t, #121212 0%, #121212 8%, transparent 100%)" zIndex={1} />
@@ -1111,12 +1050,14 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
                     <Box
                       position="absolute"
                       inset={0}
-                      style={{ backgroundImage: `url(${item.image})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                      backgroundImage={`url(${item.image})`}
+                      backgroundSize="cover"
+                      backgroundPosition="center"
                     />
                   )}
                   <Box position="absolute" inset={0} bg="linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%)" />
                   <Box position="absolute" bottom={0} left={0} p={3}>
-                    <Text fontSize="xs" fontWeight="bold" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.title}</Text>
+                    <Text fontSize="xs" fontWeight="bold" lineClamp={2}>{item.title}</Text>
                     {hasContent && <Text fontSize="10px" color="cyan.400" mt={1}>{t("launcher.news.showMore")}</Text>}
                   </Box>
                 </Box>
@@ -1224,8 +1165,8 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
                >
                  {!(launching || gameLaunched) && (
                     availableVersions[selectedVersion]?.installed
-                      ? <IconPlayerPlay size={20} style={{ marginRight: 8 }} />
-                      : <IconDownload size={20} style={{ marginRight: 8 }} />
+                      ? <Box as="span" mr={2}><IconPlayerPlay size={20} /></Box>
+                      : <Box as="span" mr={2}><IconDownload size={20} /></Box>
                  )}
                  {availableVersions[selectedVersion]?.installed
                     ? (gameLaunched ? t("launcher.updates.running") : t("launcher.updates.play"))
@@ -1268,13 +1209,13 @@ const Launcher: React.FC<{ onLogout?: () => void; hasCustomBg?: boolean }> = ({ 
       )}
 
       {openNews && (
-        <Box position="fixed" inset={0} zIndex={9999} display="flex" alignItems="center" justifyContent="center" bg="blackAlpha.700" onClick={() => setOpenNews(null)}>
-          <Box p={5} bg="gray.900" border="1px solid" borderColor="whiteAlpha.200" borderRadius="xl" maxW="500px" onClick={(e) => e.stopPropagation()}>
+        <ModalBackdrop onClose={() => setOpenNews(null)} zIndex={9999}>
+          <ModalCard maxW="500px">
             <Text fontWeight="bold" fontSize="lg" color="white">{openNews.title}</Text>
             <Text fontSize="sm" color="gray.300" mt={2} whiteSpace="pre-wrap">{openNews.content}</Text>
             <Button mt={4} onClick={() => setOpenNews(null)}>Close</Button>
-          </Box>
-        </Box>
+          </ModalCard>
+        </ModalBackdrop>
       )}
 
     </Grid>

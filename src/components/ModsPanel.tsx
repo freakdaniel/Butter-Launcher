@@ -9,7 +9,7 @@ import {
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
-import { Box, HStack, VStack, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, HStack, IconButton, Input, Portal, SegmentGroup, Select, Textarea, VStack, Text, createListCollection } from "@chakra-ui/react";
 import { useGameContext } from "../hooks/gameContext";
 import { sanitizeHtmlAllowImages } from "../utils/sanitize";
 import { useTranslation } from "react-i18next";
@@ -29,7 +29,7 @@ import { sortDiscoverInstalledFirst, formatModsError } from "../features/mods/mo
 
 // Types imported from features/mods/modsTypes.ts
 
-const ModsModal: React.FC = () => {
+const ModsPanel: React.FC = () => {
   const { gameDir, availableVersions, selectedVersion, versionType } =
     useGameContext();
   const { t } = useTranslation();
@@ -43,6 +43,19 @@ const ModsModal: React.FC = () => {
   );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<BrowseSort>("popularity");
+
+  const sortCollection = useMemo(() => createListCollection({
+    items: [
+      { label: t("modsModal.sort.installedFirst"), value: "installedFirst" },
+      { label: t("modsModal.sort.relevance"), value: "relevance" },
+      { label: t("modsModal.sort.popularity"), value: "popularity" },
+      { label: t("modsModal.sort.latestUpdate"), value: "latestUpdate" },
+      { label: t("modsModal.sort.creationDate"), value: "creationDate" },
+      { label: t("modsModal.sort.totalDownloads"), value: "totalDownloads" },
+      { label: t("modsModal.sort.az"), value: "az" },
+    ],
+  }), [t]);
+
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(24);
   const [hasMore, setHasMore] = useState(false);
@@ -857,13 +870,13 @@ const ModsModal: React.FC = () => {
                 rounded="full"
                 border="1px solid"
                 borderColor="whiteAlpha.100"
-                bg="rgba(20,24,36,0.8)"
+                bg="rgba(255,255,255,0.08)"
                 color="gray.200"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
                 cursor="pointer"
-                _hover={{ color: "white", bg: "#23293a" }}
+                _hover={{ color: "white", bg: "rgba(255,255,255,0.14)" }}
                 transition="all 0.15s"
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
@@ -880,37 +893,31 @@ const ModsModal: React.FC = () => {
                 overflow="auto"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
-                <img
+                <Box
+                  as="img"
                   src={imageViewer.src}
                   alt={imageViewer.alt || "Image"}
                   ref={imageViewerImgRef}
-                  style={{
-                    display: "block",
-                    borderRadius: "12px",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    background: "rgba(255,255,255,0.05)",
-                    boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
-                    cursor: imageViewer.zoomed ? "zoom-out" : "zoom-in",
-                    ...(imageViewer.zoomed
-                      ? {
-                          width: imageViewerZoomDims
-                            ? `${imageViewerZoomDims.w}px`
-                            : "184vw",
-                          height: imageViewerZoomDims
-                            ? `${imageViewerZoomDims.h}px`
-                            : "auto",
-                          maxWidth: "none",
-                          maxHeight: "none",
-                          objectFit: "contain",
-                          transition: "width 120ms ease, height 120ms ease",
-                        }
-                      : {
-                          maxWidth: "92vw",
-                          maxHeight: "88vh",
-                          objectFit: "contain",
-                          transition: "width 120ms ease, height 120ms ease",
-                        }),
-                  }}
+                  display="block"
+                  rounded="lg"
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  bg="whiteAlpha.50"
+                  shadow="2xl"
+                  objectFit="contain"
+                  cursor={imageViewer.zoomed ? "zoom-out" : "zoom-in"}
+                  transition="width 120ms ease, height 120ms ease"
+                  {...(imageViewer.zoomed
+                    ? {
+                        w: imageViewerZoomDims ? `${imageViewerZoomDims.w}px` : "184vw",
+                        h: imageViewerZoomDims ? `${imageViewerZoomDims.h}px` : "auto",
+                        maxW: "none",
+                        maxH: "none",
+                      }
+                    : {
+                        maxW: "92vw",
+                        maxH: "88vh",
+                      })}
                   onClick={() => {
                     setImageViewer((v) => {
                       if (!v.zoomed) {
@@ -940,61 +947,33 @@ const ModsModal: React.FC = () => {
         position="relative"
         w="full"
         h="full"
-        rounded="xl"
-        bgGradient="to-b"
-        gradientFrom="rgba(27,32,48,0.95)"
-        gradientTo="rgba(20,24,36,0.95)"
-        px={10}
+        px={8}
         py={6}
         display="flex"
         flexDir="column"
       >
         <HStack justify="space-between" gap={3} mb={4} pr={12}>
-          <Text fontSize="lg" fontWeight="semibold" color="white" letterSpacing="wide">
+          <Text fontSize="28px" fontWeight="700" letterSpacing="-0.02em" color="white" fontFamily="'Montserrat', 'Inter', sans-serif">
             {t("modsModal.title")}
           </Text>
 
-          <HStack gap={2}>
-            {(
-              [
-                { key: "discover", label: t("modsModal.tabs.discover"), action: () => setTab("discover") },
-                {
-                  key: "installed",
-                  label: t("modsModal.tabs.installed"),
-                  action: () => { setTab("installed"); void loadInstalled(); void loadRegistry(); },
-                },
-                {
-                  key: "profiles",
-                  label: t("modsModal.tabs.profiles"),
-                  action: () => { setTab("profiles"); void loadProfiles(); void loadInstalled(); void loadRegistry(); },
-                },
-              ] as const
-            ).map((t2) => {
-              const active = tab === t2.key;
-              return (
-                <Box
-                  as="button"
-                  key={t2.key}
-                  px={3}
-                  py={1.5}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor={active ? "rgba(53,201,255,0.6)" : "#2a3146"}
-                  bg={active ? "rgba(14,165,255,0.2)" : "transparent"}
-                  color={active ? "#b8f1ff" : "gray.200"}
-                  fontSize="xs"
-                  fontWeight="semibold"
-                  cursor="pointer"
-                  transition="all 0.15s"
-                  style={active ? { boxShadow: "0 0 16px rgba(14,165,255,0.55)" } : {}}
-                  _hover={active ? {} : { bg: "rgba(14,165,255,0.1)", color: "white" }}
-                  onClick={t2.action}
-                >
-                  {t2.label}
-                </Box>
-              );
-            })}
-          </HStack>
+          <SegmentGroup.Root
+            size="sm"
+            value={tab}
+            onValueChange={(e) => {
+              const next = e.value as "discover" | "installed" | "profiles";
+              setTab(next);
+              if (next === "installed") { void loadInstalled(); void loadRegistry(); }
+              if (next === "profiles") { void loadProfiles(); void loadInstalled(); void loadRegistry(); }
+            }}
+          >
+            <SegmentGroup.Indicator />
+            <SegmentGroup.Items items={[
+              { value: "discover", label: t("modsModal.tabs.discover") },
+              { value: "installed", label: t("modsModal.tabs.installed") },
+              { value: "profiles", label: t("modsModal.tabs.profiles") },
+            ]} />
+          </SegmentGroup.Root>
         </HStack>
 
         <Box
@@ -1005,24 +984,19 @@ const ModsModal: React.FC = () => {
           ref={scrollRootRef}
         >
           {tab === "discover" ? (
-            <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(31,37,56,0.7)" p={3}>
+            <Box p={3}>
               <HStack gap={2} mb={3}>
-                {detailsId != null ? (
-                  <Box
-                    as="button"
-                    px={3}
-                    py={2}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="#2a3146"
-                    bg="#23293a"
+                {/* Back button */}
+                {detailsId != null && (
+                  <IconButton
+                    aria-label={t("common.back")}
+                    size="sm"
+                    variant="ghost"
+                    borderRadius="full"
+                    bg="rgba(255,255,255,0.06)"
                     color="white"
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    cursor="pointer"
-                    _hover={{ bg: "#2f3650" }}
-                    transition="all 0.15s"
+                    flexShrink={0}
+                    _hover={{ bg: "rgba(255,255,255,0.12)" }}
                     onClick={() => {
                       setDetailsId(null);
                       setDetailsError("");
@@ -1030,21 +1004,28 @@ const ModsModal: React.FC = () => {
                       setDetailsHtml("");
                       setDetailsFiles([]);
                     }}
-                    title={t("common.back")}
                   >
                     <IconArrowLeft size={18} />
-                    {t("common.back")}
-                  </Box>
-                ) : null}
+                  </IconButton>
+                )}
 
+                {/* Search */}
                 <Box flex={1} position="relative">
-                  <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
-                    <IconSearch size={16} />
+                  <Box
+                    position="absolute"
+                    left={3}
+                    top="50%"
+                    transform="translateY(-50%)"
+                    color="rgba(255,255,255,0.3)"
+                    pointerEvents="none"
+                    zIndex={1}
+                  >
+                    <IconSearch size={15} />
                   </Box>
-                  <input
+                  <Input
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => {
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                       if (e.key === "Enter") {
                         void loadDiscover({ reset: true, q: query.trim(), sort });
                         setDetailsId(null);
@@ -1052,91 +1033,102 @@ const ModsModal: React.FC = () => {
                     }}
                     placeholder={t("modsModal.searchPlaceholder")}
                     disabled={discoverLoading}
-                    style={{
-                      width: "100%",
-                      paddingLeft: "36px",
-                      paddingRight: "12px",
-                      paddingTop: "8px",
-                      paddingBottom: "8px",
-                      borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)",
-                      border: "1px solid #2a3146",
-                      color: "white",
-                      fontSize: "0.875rem",
-                      outline: "none",
-                      fontFamily: "inherit",
-                    }}
+                    pl="36px"
+                    size="sm"
+                    bg="rgba(255,255,255,0.05)"
+                    border="1px solid"
+                    borderColor="rgba(255,255,255,0.1)"
+                    color="white"
+                    borderRadius="md"
+                    _placeholder={{ color: "rgba(255,255,255,0.28)" }}
+                    _focus={{ borderColor: "rgba(59,130,246,0.5)", boxShadow: "0 0 0 1px rgba(59,130,246,0.25)" }}
+                    _disabled={{ opacity: 0.5 }}
                   />
                 </Box>
 
-                <select
-                  value={sort}
-                  onChange={(e) => {
-                    const next = e.target.value as BrowseSort;
+                {/* Sort */}
+                <Select.Root
+                  collection={sortCollection}
+                  value={[sort]}
+                  onValueChange={(e) => {
+                    const next = e.value[0] as BrowseSort;
                     setSort(next);
                     setDetailsId(null);
                     void loadDiscover({ reset: true, q: query.trim(), sort: next });
                   }}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    background: "rgba(20,24,36,0.8)",
-                    border: "1px solid #2a3146",
-                    color: "white",
-                    fontSize: "0.875rem",
-                    outline: "none",
-                  }}
-                  title={t("common.sortBy")}
+                  size="sm"
+                  width="auto"
+                  flexShrink={0}
                 >
-                  <option value="installedFirst">{t("modsModal.sort.installedFirst")}</option>
-                  <option value="relevance">{t("modsModal.sort.relevance")}</option>
-                  <option value="popularity">{t("modsModal.sort.popularity")}</option>
-                  <option value="latestUpdate">{t("modsModal.sort.latestUpdate")}</option>
-                  <option value="creationDate">{t("modsModal.sort.creationDate")}</option>
-                  <option value="totalDownloads">{t("modsModal.sort.totalDownloads")}</option>
-                  <option value="az">{t("modsModal.sort.az")}</option>
-                </select>
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger
+                      bg="rgba(255,255,255,0.05)"
+                      border="1px solid"
+                      borderColor="rgba(255,255,255,0.1)"
+                      color="rgba(255,255,255,0.8)"
+                      borderRadius="md"
+                      minW="130px"
+                      _hover={{ bg: "rgba(255,255,255,0.08)" }}
+                    >
+                      <Select.ValueText />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator color="rgba(255,255,255,0.5)" />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content
+                        bg="rgba(13,17,32,0.97)"
+                        border="1px solid rgba(255,255,255,0.1)"
+                        backdropFilter="blur(12px)"
+                      >
+                        {sortCollection.items.map((item) => (
+                          <Select.Item
+                            item={item}
+                            key={item.value}
+                            color="rgba(255,255,255,0.75)"
+                            _hover={{ bg: "rgba(255,255,255,0.08)", color: "white" }}
+                            _highlighted={{ bg: "rgba(59,130,246,0.2)", color: "white" }}
+                          >
+                            {item.label}
+                            <Select.ItemIndicator />
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="#23293a"
-                  color="white"
-                  cursor="pointer"
-                  opacity={discoverLoading ? 0.6 : 1}
-                  _hover={{ bg: "#2f3650" }}
-                  transition="all 0.15s"
+                {/* Refresh */}
+                <IconButton
+                  aria-label={t("common.search")}
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  opacity={discoverLoading ? 0.5 : 1}
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => { setDetailsId(null); void loadDiscover({ reset: true, q: query.trim(), sort }); }}
-                  title={t("common.search")}
                 >
-                  <IconRefresh size={18} />
-                </Box>
+                  <IconRefresh size={16} />
+                </IconButton>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="transparent"
-                  color="gray.200"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                  cursor="pointer"
-                  _hover={{ bg: "whiteAlpha.50" }}
-                  transition="all 0.15s"
+                {/* Open folder */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.65)"
+                  borderRadius="md"
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => void handleOpenModsFolder()}
-                  title={t("modsModal.openModsFolder")}
                 >
-                  <IconFolderOpen size={18} />
-                  {t("common.folder")}
-                </Box>
+                  <IconFolderOpen size={15} />
+                  <Box as="span" ml={1.5}>{t("common.folder")}</Box>
+                </Button>
               </HStack>
 
               {discoverError ? (
@@ -1148,7 +1140,7 @@ const ModsModal: React.FC = () => {
               ) : null}
 
               {detailsId != null ? (
-                <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(20,24,36,0.6)" p={3}>
+                <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)" p={3}>
                   {detailsError ? (
                     <Text fontSize="xs" color="red.300" mb={2}>{detailsError}</Text>
                   ) : null}
@@ -1157,53 +1149,72 @@ const ModsModal: React.FC = () => {
                     <Text fontSize="xs" color="gray.300">{t("modsModal.details.loadingDetails")}</Text>
                   ) : detailsMod ? (
                     <VStack gap={3} align="stretch">
-                      <HStack align="flex-start" justify="space-between" gap={3}>
-                        <Box minW={0}>
-                          <Text fontSize="lg" fontWeight="semibold" color="white" lineHeight="tight">
+                      {/* Compact header: logo + meta + install */}
+                      <HStack gap={3} align="flex-start">
+                        {detailsMod.logoUrl ? (
+                          <Box
+                            w="72px"
+                            h="72px"
+                            flexShrink={0}
+                            borderRadius="12px"
+                            overflow="hidden"
+                            bg="rgba(255,255,255,0.06)"
+                            border="1px solid rgba(255,255,255,0.08)"
+                            cursor="zoom-in"
+                            onClick={() => openImageViewer(detailsMod.logoUrl!, detailsMod.name)}
+                          >
+                            <Box
+                              as="img"
+                              src={detailsMod.logoUrl}
+                              alt={detailsMod.name}
+                              w="full"
+                              h="full"
+                              objectFit="cover"
+                              loading="lazy"
+                            />
+                          </Box>
+                        ) : null}
+
+                        <Box flex={1} minW={0}>
+                          <Text fontSize="17px" fontWeight="700" color="white" lineHeight="1.2">
                             {detailsMod.name}
                           </Text>
-                          <Text fontSize="xs" color="gray.100" mt={1}>{detailsMod.summary}</Text>
-                          <Text fontSize="11px" color="gray.200" mt={1}>{(detailsMod.author ?? "") || ""}</Text>
-
-                          <HStack mt={2} flexWrap="wrap" gap={2} fontSize="11px">
+                          <Text fontSize="12px" color="rgba(255,255,255,0.45)" mt={0.5}>
+                            {(detailsMod.author ?? "") || ""}
+                          </Text>
+                          <HStack mt={1.5} flexWrap="wrap" gap={1.5}>
                             {detailsMod.downloadCount != null ? (
-                              <Box px={2} py={1} rounded="md" border="1px solid" borderColor="whiteAlpha.100" bg="whiteAlpha.50" color="gray.200">
+                              <Badge colorPalette="gray" variant="subtle" fontSize="10px">
                                 {t("modsModal.details.downloads", { value: formatNumber(detailsMod.downloadCount) })}
-                              </Box>
+                              </Badge>
                             ) : null}
                             {detailsMod.dateCreated ? (
-                              <Box px={2} py={1} rounded="md" border="1px solid" borderColor="whiteAlpha.100" bg="whiteAlpha.50" color="gray.200">
+                              <Badge colorPalette="gray" variant="subtle" fontSize="10px">
                                 {t("modsModal.details.created", { date: formatDate(detailsMod.dateCreated) })}
-                              </Box>
+                              </Badge>
                             ) : null}
                             {detailsMod.dateModified ? (
-                              <Box px={2} py={1} rounded="md" border="1px solid" borderColor="whiteAlpha.100" bg="whiteAlpha.50" color="gray.200">
+                              <Badge colorPalette="gray" variant="subtle" fontSize="10px">
                                 {t("modsModal.details.updated", { date: formatDate(detailsMod.dateModified) })}
-                              </Box>
+                              </Badge>
                             ) : null}
                           </HStack>
                         </Box>
 
-                        <VStack align="flex-end" gap={2}>
+                        <VStack align="flex-end" gap={1.5} flexShrink={0}>
                           {(() => {
                             const stableId = detailsFiles.find((f) => Number(f?.releaseType) === 1)?.id ?? detailsFiles?.[0]?.id;
                             const status = getInstallStatus(detailsMod.id, stableId).state;
                             return (
-                              <Box
-                                as="button"
-                                px={3}
-                                py={2}
-                                rounded="lg"
+                              <Button
+                                size="sm"
+                                bg="rgba(37,99,235,0.25)"
                                 border="1px solid"
-                                borderColor="rgba(96,165,250,0.3)"
-                                style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
-                                color="white"
-                                fontSize="sm"
-                                fontWeight="bold"
-                                cursor="pointer"
+                                borderColor="rgba(59,130,246,0.3)"
+                                color="rgba(147,197,253,1)"
+                                _hover={!(installingId === detailsMod.id || status === "installed") ? { bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" } : {}}
                                 opacity={(installingId === detailsMod.id || status === "installed") ? 0.7 : 1}
-                                _hover={!(installingId === detailsMod.id || status === "installed") ? { boxShadow: "0 0 18px rgba(2,104,212,0.85)" } : {}}
-                                transition="all 0.15s"
+                                cursor={status === "installed" ? "default" : "pointer"}
                                 onClick={() => {
                                   if (status === "installed") return;
                                   void (async () => {
@@ -1216,25 +1227,22 @@ const ModsModal: React.FC = () => {
                                     }
                                   })();
                                 }}
-                                title={t("modsModal.actions.install")}
                               >
-                                <HStack gap={2}>
-                                  <IconDownload size={18} />
-                                  <span>
-                                    {installingId === detailsMod.id
-                                      ? t("modsModal.status.installing")
-                                      : status === "installed"
-                                        ? t("modsModal.actions.installed")
-                                        : status === "update"
-                                          ? t("modsModal.actions.update")
-                                          : t("modsModal.actions.install")}
-                                  </span>
-                                </HStack>
-                              </Box>
+                                <IconDownload size={15} />
+                                <Box as="span" ml={1}>
+                                  {installingId === detailsMod.id
+                                    ? t("modsModal.status.installing")
+                                    : status === "installed"
+                                      ? t("modsModal.actions.installed")
+                                      : status === "update"
+                                        ? t("modsModal.actions.update")
+                                        : t("modsModal.actions.install")}
+                                </Box>
+                              </Button>
                             );
                           })()}
                           {installingId === detailsMod.id ? (
-                            <Text fontSize="11px" color="gray.300">
+                            <Text fontSize="11px" color="rgba(255,255,255,0.45)">
                               {(() => {
                                 const p = downloadProgress[detailsMod.id];
                                 if (!p) return t("modsModal.status.downloading");
@@ -1248,36 +1256,43 @@ const ModsModal: React.FC = () => {
                         </VStack>
                       </HStack>
 
-                      {detailsMod.logoUrl ? (
-                        <img
-                          src={detailsMod.logoUrl}
-                          alt={detailsMod.name}
-                          style={{ width: "100%", maxHeight: "220px", objectFit: "cover", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "zoom-in" }}
-                          loading="lazy"
-                          onClick={() => openImageViewer(detailsMod.logoUrl!, detailsMod.name)}
-                        />
-                      ) : null}
-
+                      {/* Horizontal screenshot strip */}
                       {Array.isArray(detailsMod.screenshots) && detailsMod.screenshots.length ? (
-                        <Box display="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", gap: "8px" }}>
-                          {detailsMod.screenshots.slice(0, 6).map((s, idx) => {
-                            const src = s.thumbnailUrl || s.url;
-                            if (!src) return null;
-                            return (
-                              <img
-                                key={`${detailsMod.id}-shot-${idx}`}
-                                src={src}
-                                alt={s.title || `Screenshot ${idx + 1}`}
-                                style={{ width: "100%", height: "90px", objectFit: "cover", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", cursor: "zoom-in" }}
-                                loading="lazy"
-                                onClick={() => openImageViewer(s.url || src, s.title || `Screenshot ${idx + 1}`)}
-                              />
-                            );
-                          })}
+                        <Box overflowX="auto" mx={-3} px={3} scrollbarWidth="thin">
+                          <HStack gap={2} w="max-content" pb={1}>
+                            {detailsMod.screenshots.map((s, idx) => {
+                              const src = s.thumbnailUrl || s.url;
+                              if (!src) return null;
+                              return (
+                                <Box
+                                  key={`${detailsMod.id}-shot-${idx}`}
+                                  h="110px"
+                                  w="180px"
+                                  flexShrink={0}
+                                  borderRadius="8px"
+                                  overflow="hidden"
+                                  border="1px solid rgba(255,255,255,0.08)"
+                                  bg="rgba(255,255,255,0.05)"
+                                  cursor="zoom-in"
+                                  onClick={() => openImageViewer(s.url || src, s.title || `Screenshot ${idx + 1}`)}
+                                >
+                                  <Box
+                                    as="img"
+                                    src={src}
+                                    alt={s.title || `Screenshot ${idx + 1}`}
+                                    w="full"
+                                    h="full"
+                                    objectFit="cover"
+                                    loading="lazy"
+                                  />
+                                </Box>
+                              );
+                            })}
+                          </HStack>
                         </Box>
                       ) : null}
 
-                      <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(15,20,34,0.7)" p={3}>
+                      <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)" p={3}>
                         <Text fontSize="sm" color="white" fontWeight="semibold" mb={2}>{t("modsModal.details.description")}</Text>
                         {detailsLoading && !detailsHtml ? (
                           <Text fontSize="xs" color="gray.100">{t("modsModal.details.loadingDescription")}</Text>
@@ -1286,7 +1301,7 @@ const ModsModal: React.FC = () => {
                             color="white"
                             fontSize="sm"
                             lineHeight={1.7}
-                            style={{ overflowWrap: "break-word" }}
+                            overflowWrap="break-word"
                             onClick={(e: React.MouseEvent) => {
                               const target = e.target as HTMLElement | null;
                               if (!target) return;
@@ -1303,7 +1318,7 @@ const ModsModal: React.FC = () => {
                         )}
                       </Box>
 
-                      <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(15,20,34,0.7)" p={3}>
+                      <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)" p={3}>
                         <Text fontSize="sm" color="white" fontWeight="semibold" mb={2}>{t("modsModal.details.files")}</Text>
                         {detailsLoading && !detailsFiles.length ? (
                           <Text fontSize="xs" color="gray.300">{t("modsModal.details.loadingFiles")}</Text>
@@ -1327,7 +1342,7 @@ const ModsModal: React.FC = () => {
                                       </Box>
                                     ) : null}
                                     {Array.isArray(f.gameVersions) && f.gameVersions.length ? (
-                                      <Text color="gray.200" style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                                      <Text color="gray.200" lineClamp={1}>
                                         {f.gameVersions.slice(0, 6).join(", ")}
                                       </Text>
                                     ) : null}
@@ -1340,21 +1355,15 @@ const ModsModal: React.FC = () => {
                                     const installedFileId = typeof entry?.fileId === "number" ? entry.fileId : undefined;
                                     const isInstalledThisFile = installedFileId != null && installedFileId === f.id;
                                     return (
-                                      <Box
-                                        as="button"
-                                        px={3}
-                                        py={1.5}
-                                        rounded="lg"
+                                      <Button
+                                        size="xs"
+                                        bg="rgba(37,99,235,0.25)"
                                         border="1px solid"
-                                        borderColor="rgba(96,165,250,0.3)"
-                                        style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
-                                        color="white"
-                                        fontSize="xs"
-                                        fontWeight="bold"
-                                        cursor="pointer"
+                                        borderColor="rgba(59,130,246,0.3)"
+                                        color="rgba(147,197,253,1)"
+                                        _hover={!(installingId === detailsMod.id || isInstalledThisFile) ? { bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" } : {}}
                                         opacity={(installingId === detailsMod.id || isInstalledThisFile) ? 0.7 : 1}
-                                        _hover={!(installingId === detailsMod.id || isInstalledThisFile) ? { boxShadow: "0 0 18px rgba(2,104,212,0.85)" } : {}}
-                                        transition="all 0.15s"
+                                        cursor={isInstalledThisFile ? "default" : "pointer"}
                                         onClick={() => {
                                           if (isInstalledThisFile) return;
                                           void (async () => {
@@ -1367,10 +1376,9 @@ const ModsModal: React.FC = () => {
                                             }
                                           })();
                                         }}
-                                        title={t("modsModal.details.installThisFile")}
                                       >
                                         {isInstalledThisFile ? t("modsModal.actions.installed") : t("modsModal.actions.install")}
-                                      </Box>
+                                      </Button>
                                     );
                                   })()}
                                 </Box>
@@ -1392,124 +1400,134 @@ const ModsModal: React.FC = () => {
                     {totalCount != null ? t("modsModal.details.results", { value: formatNumber(totalCount) }) : ""}
                   </Text>
 
-                  <Box pr={1}>
+                  <VStack align="stretch" gap={0}>
                     {discoverLoading && !discoverMods.length ? (
-                      <Text fontSize="xs" color="gray.100">{t("common.loading")}</Text>
+                      <Text fontSize="xs" color="rgba(255,255,255,0.38)" px={1} py={3}>{t("common.loading")}</Text>
                     ) : discoverMods.length ? (
-                      <Box display="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
-                        {discoverMods.map((m) => {
-                          const installing = installingId === m.id;
-                          const p = downloadProgress[m.id];
-                          const pct = p?.total ? Math.floor((p.received / p.total) * 100) : null;
-                          const status = getInstallStatus(m.id, m.latestFileId).state;
-                          const actionLabel =
-                            status === "installed"
-                              ? t("modsModal.actions.installed")
-                              : status === "update"
-                                ? t("modsModal.actions.update")
-                                : t("modsModal.actions.install");
+                      discoverMods.map((m) => {
+                        const installing = installingId === m.id;
+                        const p = downloadProgress[m.id];
+                        const pct = p?.total ? Math.floor((p.received / p.total) * 100) : null;
+                        const status = getInstallStatus(m.id, m.latestFileId).state;
+                        const actionLabel =
+                          status === "installed"
+                            ? t("modsModal.actions.installed")
+                            : status === "update"
+                              ? t("modsModal.actions.update")
+                              : t("modsModal.actions.install");
 
-                          return (
+                        return (
+                          <HStack
+                            key={m.id}
+                            px={2}
+                            py={2}
+                            gap={3}
+                            borderRadius="lg"
+                            cursor="pointer"
+                            transition="background 0.12s"
+                            _hover={{ bg: "rgba(255,255,255,0.04)" }}
+                            borderBottom="1px solid rgba(255,255,255,0.04)"
+                            onClick={() => {
+                              setDetailsId(m.id);
+                              void loadDetails(m.id);
+                            }}
+                          >
+                            {/* Thumbnail */}
                             <Box
-                              as="button"
-                              key={m.id}
-                              textAlign="left"
-                              rounded="xl"
-                              border="1px solid"
-                              borderColor="#2a3146"
-                              bg="rgba(20,24,36,0.6)"
-                              cursor="pointer"
-                              p={3}
-                              display="flex"
-                              flexDir="column"
-                              gap={2}
-                              _hover={{ bg: "rgba(20,24,36,0.8)", borderColor: "rgba(53,201,255,0.3)" }}
-                              transition="all 0.15s"
-                              onClick={() => {
-                                setDetailsId(m.id);
-                                void loadDetails(m.id);
-                              }}
+                              w="60px"
+                              h="60px"
+                              flexShrink={0}
+                              borderRadius="10px"
+                              overflow="hidden"
+                              bg="rgba(255,255,255,0.06)"
+                              border="1px solid rgba(255,255,255,0.08)"
                             >
-                              <HStack align="flex-start" gap={3}>
-                                {m.logoThumbnailUrl ? (
-                                  <img
-                                    src={m.logoThumbnailUrl}
-                                    alt={m.name}
-                                    style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", flexShrink: 0 }}
-                                    loading="lazy"
-                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                                  />
-                                ) : (
-                                  <Box w={12} h={12} rounded="lg" bg="#23293a" border="1px solid" borderColor="whiteAlpha.100" flexShrink={0} />
-                                )}
-
-                                <Box minW={0} flex={1}>
-                                  <Text fontSize="sm" fontWeight="semibold" color="white" lineHeight="tight" style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
-                                    {m.name}
-                                  </Text>
-                                  <Text fontSize="11px" color="gray.100" mt={0.5} style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                                    {m.summary}
-                                  </Text>
-                                  <Text fontSize="10px" color="gray.200" mt={1} style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
-                                    {m.author}{m.latestVersionName ? ` • ${m.latestVersionName}` : ""}
-                                  </Text>
-                                </Box>
-                              </HStack>
-
-                              <HStack justify="space-between" gap={2} mt={1}>
-                                <Text fontSize="10px" color="gray.400">
-                                  {typeof m.downloadCount === "number" ? t("modsModal.details.downloads", { value: formatNumber(m.downloadCount) }) : ""}
-                                  {m.dateModified ? ` • ${t("modsModal.details.updatedShort", { date: formatDate(m.dateModified) })}` : ""}
-                                </Text>
-
+                              {m.logoThumbnailUrl ? (
                                 <Box
-                                  as="button"
-                                  px={3}
-                                  py={1.5}
-                                  rounded="lg"
-                                  border="1px solid"
-                                  borderColor="rgba(96,165,250,0.3)"
-                                  style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
-                                  color="white"
-                                  fontSize="xs"
-                                  fontWeight="bold"
-                                  cursor="pointer"
-                                  opacity={(installing || status === "installed") ? 0.7 : 1}
-                                  _hover={!(installing || status === "installed") ? { boxShadow: "0 0 18px rgba(2,104,212,0.85)" } : {}}
-                                  transition="all 0.15s"
-                                  onClick={(e: React.MouseEvent) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (status === "installed") return;
-                                    void (async () => {
-                                      try {
-                                        const dir = await ensureGameDir();
-                                        setInstallingId(m.id);
-                                        await window.config.modsInstall(m.id, dir);
-                                      } catch {
-                                        setInstallingId(null);
-                                      }
-                                    })();
-                                  }}
-                                  title={t("modsModal.actions.install")}
-                                >
-                                  {installing ? t("modsModal.status.installing") : actionLabel}
-                                </Box>
-                              </HStack>
-
-                              {installing ? (
-                                <Text fontSize="10px" color="gray.300">
-                                  {pct != null ? t("modsModal.status.downloadingPct", { pct }) : t("modsModal.status.downloading")}
-                                </Text>
+                                  as="img"
+                                  src={m.logoThumbnailUrl}
+                                  alt={m.name}
+                                  w="full"
+                                  h="full"
+                                  objectFit="cover"
+                                  loading="lazy"
+                                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => { e.currentTarget.style.display = "none"; }}
+                                />
                               ) : null}
                             </Box>
-                          );
-                        })}
-                      </Box>
+
+                            {/* Text */}
+                            <Box flex={1} minW={0}>
+                              <Text
+                                fontSize="14px"
+                                fontWeight="600"
+                                color="rgba(255,255,255,0.92)"
+                                lineHeight="1.3"
+                                lineClamp={1}
+                              >
+                                {m.name}
+                              </Text>
+                              <Text
+                                fontSize="12px"
+                                color="rgba(255,255,255,0.42)"
+                                mt="2px"
+                                lineClamp={1}
+                              >
+                                {m.summary}
+                              </Text>
+                              <Text fontSize="11px" color="rgba(255,255,255,0.25)" mt="2px">
+                                {m.author}
+                                {typeof m.downloadCount === "number" ? ` · ${formatNumber(m.downloadCount)} ↓` : ""}
+                                {m.dateModified ? ` · ${t("modsModal.details.updatedShort", { date: formatDate(m.dateModified) })}` : ""}
+                              </Text>
+                            </Box>
+
+                            {/* Actions */}
+                            <VStack gap={1} flexShrink={0} align="flex-end" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                              {status === "installed" && !installing && (
+                                <Badge colorPalette="green" variant="subtle" fontSize="10px" px={1.5}>
+                                  {t("modsModal.actions.installed")}
+                                </Badge>
+                              )}
+                              {status === "update" && !installing && (
+                                <Badge colorPalette="blue" variant="subtle" fontSize="10px" px={1.5}>
+                                  {t("modsModal.actions.update")}
+                                </Badge>
+                              )}
+                              <Button
+                                size="xs"
+                                bg="rgba(37,99,235,0.25)"
+                                border="1px solid"
+                                borderColor="rgba(59,130,246,0.3)"
+                                color="rgba(147,197,253,1)"
+                                _hover={!installing && status !== "installed" ? { bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" } : {}}
+                                opacity={(installing || status === "installed") ? 0.6 : 1}
+                                cursor={status === "installed" ? "default" : "pointer"}
+                                onClick={() => {
+                                  if (status === "installed") return;
+                                  void (async () => {
+                                    try {
+                                      const dir = await ensureGameDir();
+                                      setInstallingId(m.id);
+                                      await window.config.modsInstall(m.id, dir);
+                                    } catch {
+                                      setInstallingId(null);
+                                    }
+                                  })();
+                                }}
+                              >
+                                {installing
+                                  ? (pct != null ? `${pct}%` : t("modsModal.status.installing"))
+                                  : actionLabel}
+                              </Button>
+                            </VStack>
+                          </HStack>
+                        );
+                      })
                     ) : (
-                      <Text fontSize="xs" color="gray.100">{t("modsModal.noModsFound")}</Text>
+                      <Text fontSize="xs" color="rgba(255,255,255,0.38)" px={1} py={3}>{t("modsModal.noModsFound")}</Text>
                     )}
-                  </Box>
+                  </VStack>
 
                   <HStack mt={3} justify="space-between" gap={2}>
                     <Text fontSize="11px" color="gray.400">
@@ -1529,21 +1547,16 @@ const ModsModal: React.FC = () => {
               )}
             </Box>
           ) : tab === "installed" ? (
-            <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(31,37,56,0.7)" p={4}>
-              <HStack justify="center" gap={3} mb={2} w="full" flexWrap="wrap">
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="transparent"
-                  color="gray.200"
-                  cursor="pointer"
-                  opacity={(installedLoading || updatesWorking) ? 0.6 : 1}
-                  _hover={{ bg: "whiteAlpha.50" }}
-                  transition="all 0.15s"
+            <Box p={4}>
+              <HStack gap={2} mb={2} flexWrap="wrap">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  opacity={(installedLoading || updatesWorking) ? 0.5 : 1}
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => {
                     void (async () => {
                       try {
@@ -1584,24 +1597,18 @@ const ModsModal: React.FC = () => {
                       }
                     })();
                   }}
-                  title={t("modsModal.installed.checkUpdates")}
                 >
                   {checkedAllOnce ? t("modsModal.installed.updateAll") : t("modsModal.installed.checkUpdates")}
-                </Box>
+                </Button>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="#23293a"
-                  color="white"
-                  cursor="pointer"
-                  opacity={installedLoading ? 0.6 : 1}
-                  _hover={{ bg: "#2f3650" }}
-                  transition="all 0.15s"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  opacity={installedLoading ? 0.5 : 1}
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => {
                     void (async () => {
                       try {
@@ -1612,24 +1619,18 @@ const ModsModal: React.FC = () => {
                       } catch { /* ignore */ }
                     })();
                   }}
-                  title={t("modsModal.installed.enableAll")}
                 >
                   {t("modsModal.installed.enableAll")}
-                </Box>
+                </Button>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="transparent"
-                  color="gray.200"
-                  cursor="pointer"
-                  opacity={installedLoading ? 0.6 : 1}
-                  _hover={{ bg: "whiteAlpha.50" }}
-                  transition="all 0.15s"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  opacity={installedLoading ? 0.5 : 1}
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => {
                     void (async () => {
                       try {
@@ -1640,54 +1641,36 @@ const ModsModal: React.FC = () => {
                       } catch { /* ignore */ }
                     })();
                   }}
-                  title={t("modsModal.installed.disableAll")}
                 >
                   {t("modsModal.installed.disableAll")}
-                </Box>
+                </Button>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="#23293a"
-                  color="white"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                  cursor="pointer"
-                  opacity={installedLoading ? 0.6 : 1}
-                  _hover={{ bg: "#2f3650" }}
-                  transition="all 0.15s"
+                <IconButton
+                  aria-label={t("common.refresh")}
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  opacity={installedLoading ? 0.5 : 1}
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => void loadInstalled()}
-                  title={t("common.refresh")}
                 >
-                  <IconRefresh size={18} />
-                  {t("common.refresh")}
-                </Box>
+                  <IconRefresh size={16} />
+                </IconButton>
 
-                <Box
-                  as="button"
-                  px={3}
-                  py={2}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="#2a3146"
-                  bg="transparent"
-                  color="gray.200"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                  cursor="pointer"
-                  _hover={{ bg: "whiteAlpha.50" }}
-                  transition="all 0.15s"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  bg="rgba(255,255,255,0.06)"
+                  color="rgba(255,255,255,0.65)"
+                  borderRadius="md"
+                  _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                   onClick={() => void handleOpenModsFolder()}
                 >
-                  <IconFolderOpen size={18} />
-                  {t("modsModal.installed.openFolder")}
-                </Box>
+                  <IconFolderOpen size={15} />
+                  <Box as="span" ml={1.5}>{t("modsModal.installed.openFolder")}</Box>
+                </Button>
               </HStack>
 
               <Text fontSize="11px" color="gray.400" overflowX="auto" whiteSpace="nowrap" mt={2}>
@@ -1705,52 +1688,44 @@ const ModsModal: React.FC = () => {
                 <Text fontSize="xs" color="red.300" mb={2}>{installedError}</Text>
               ) : null}
 
-              <HStack gap={4} px={2} mt={4} mb={2} fontSize="sm" borderBottom="1px solid" borderColor="whiteAlpha.50" pb={2}>
-                <Text color="gray.400" fontWeight="medium">{t("common.sortBy")}:</Text>
-                <HStack gap={3} overflowX="auto" whiteSpace="nowrap">
+              <HStack gap={3} px={1} mt={4} mb={2} fontSize="sm" borderBottom="1px solid" borderColor="whiteAlpha.50" pb={2}>
+                <Text color="rgba(255,255,255,0.38)" fontWeight="medium" flexShrink={0}>{t("common.sortBy")}:</Text>
+                <HStack gap={1} overflowX="auto" whiteSpace="nowrap" flex={1}>
                   {[
                     { id: "connectedToLauncher", label: t("modsModal.installed.sort.connectedToLauncher") },
                     { id: "installedManually", label: t("modsModal.installed.sort.installedManually") },
                     { id: "alphabetical", label: t("modsModal.installed.sort.alphabetical") },
                     { id: "needsUpdate", label: t("modsModal.installed.sort.needsUpdate") },
                   ].map((opt) => (
-                    <Box
-                      as="button"
+                    <Button
                       key={opt.id}
-                      cursor="pointer"
-                      outline="none"
-                      color={installedSort === opt.id ? "blue.400" : "gray.500"}
+                      size="xs"
+                      variant="ghost"
+                      color={installedSort === opt.id ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.35)"}
                       fontWeight={installedSort === opt.id ? "semibold" : "normal"}
-                      _hover={installedSort !== opt.id ? { color: "gray.300" } : {}}
-                      transition="colors 0.15s"
+                      bg={installedSort === opt.id ? "rgba(255,255,255,0.08)" : "transparent"}
+                      borderRadius="md"
+                      _hover={installedSort !== opt.id ? { color: "rgba(255,255,255,0.7)", bg: "rgba(255,255,255,0.04)" } : {}}
                       onClick={() => setInstalledSort(opt.id as InstalledSort)}
                     >
                       {opt.label}
-                    </Box>
+                    </Button>
                   ))}
                 </HStack>
-                <Box
-                  as="button"
-                  ml="auto"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  rounded="md"
-                  color="blue.400"
-                  cursor="pointer"
-                  _hover={{ color: "blue.300", bg: "whiteAlpha.50" }}
-                  transition="all 0.15s"
-                  outline="none"
-                  fontSize="xl"
-                  px={2}
+                <IconButton
+                  aria-label={installedSortAsc ? t("common.ascending") : t("common.descending")}
+                  size="xs"
+                  variant="ghost"
+                  color="rgba(255,255,255,0.7)"
+                  borderRadius="md"
+                  _hover={{ color: "rgba(255,255,255,0.95)", bg: "rgba(255,255,255,0.06)" }}
                   onClick={() => setInstalledSortAsc((v) => !v)}
-                  title={installedSortAsc ? t("common.ascending") : t("common.descending")}
                 >
-                  {installedSortAsc ? "↑" : "↓"}
-                </Box>
+                  <Box as="span" fontSize="md">{installedSortAsc ? "↑" : "↓"}</Box>
+                </IconButton>
               </HStack>
 
-              <Box pr={1} rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(20,24,36,0.6)">
+              <Box pr={1} rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)">
                 {installedLoading ? (
                   <Text p={3} fontSize="xs" color="gray.100">{t("common.loading")}</Text>
                 ) : sortedInstalledItems.length ? (
@@ -1768,21 +1743,20 @@ const ModsModal: React.FC = () => {
                           <Box minW={0}>
                             <Text fontSize="xs" color="white" truncate>{it.fileName}</Text>
                             <HStack mt={0.5} gap={2}>
-                              <Box
-                                px={2}
-                                py={0.5}
-                                rounded="full"
-                                border="1px solid"
-                                borderColor={it.enabled ? "rgba(74,222,128,0.3)" : "rgba(107,114,128,0.3)"}
-                                bg={it.enabled ? "rgba(34,197,94,0.1)" : "rgba(255,255,255,0.05)"}
-                                color={it.enabled ? "green.200" : "gray.300"}
+                              <Badge
+                                size="sm"
+                                variant="subtle"
+                                colorPalette={it.enabled ? "green" : "gray"}
+                                borderRadius="full"
                                 fontSize="10px"
-                                fontWeight="semibold"
+                                px={2}
                               >
                                 {it.enabled ? t("common.enabled") : t("common.disabled")}
-                              </Box>
+                              </Badge>
                               {isManual ? (
-                                <Text fontSize="10px" color="yellow.300">{t("modsModal.installed.installedManually")}</Text>
+                                <Badge size="sm" variant="subtle" colorPalette="yellow" borderRadius="full" fontSize="10px" px={2}>
+                                  {t("modsModal.installed.installedManually")}
+                                </Badge>
                               ) : null}
                             </HStack>
                             {!isManual && checked?.updateAvailable ? (
@@ -1794,39 +1768,28 @@ const ModsModal: React.FC = () => {
 
                           <HStack gap={2}>
                             {isManual ? (
-                              <Box
-                                as="button"
-                                px={3}
-                                py={1.5}
-                                rounded="lg"
-                                border="1px solid"
-                                borderColor="#2a3146"
-                                bg="transparent"
-                                color="yellow.100"
-                                fontSize="xs"
-                                cursor="pointer"
-                                _hover={{ bg: "whiteAlpha.50" }}
-                                transition="all 0.15s"
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                borderColor="rgba(255,255,255,0.12)"
+                                color="yellow.200"
+                                borderRadius="lg"
+                                _hover={{ bg: "rgba(234,179,8,0.1)", borderColor: "rgba(234,179,8,0.3)" }}
                                 onClick={() => openAttachPrompt(it.fileName)}
                                 title={t("modsModal.installed.attachToLauncher")}
                               >
                                 {t("modsModal.installed.attachToLauncher")}
-                              </Box>
+                              </Button>
                             ) : canCheckUpdate ? (
-                              <Box
-                                as="button"
-                                px={3}
-                                py={1.5}
-                                rounded="lg"
-                                border="1px solid"
-                                borderColor="#2a3146"
-                                bg="transparent"
-                                color="gray.200"
-                                fontSize="xs"
-                                cursor="pointer"
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                bg="rgba(255,255,255,0.04)"
+                                color="rgba(255,255,255,0.7)"
+                                borderRadius="lg"
+                                border="1px solid rgba(255,255,255,0.08)"
                                 opacity={(updatesWorking || installingId === managedModId) ? 0.6 : 1}
-                                _hover={{ bg: "whiteAlpha.50" }}
-                                transition="all 0.15s"
+                                _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                                 onClick={() => {
                                   void (async () => {
                                     try {
@@ -1862,22 +1825,17 @@ const ModsModal: React.FC = () => {
                                 title={t("modsModal.installed.checkUpdate")}
                               >
                                 {checked?.updateAvailable ? t("modsModal.installed.update") : t("modsModal.installed.checkUpdate")}
-                              </Box>
+                              </Button>
                             ) : null}
 
-                            <Box
-                              as="button"
-                              px={3}
-                              py={1.5}
-                              rounded="lg"
-                              border="1px solid"
-                              borderColor="#2a3146"
-                              bg={it.enabled ? "transparent" : "#23293a"}
-                              color={it.enabled ? "gray.200" : "white"}
-                              fontSize="xs"
-                              cursor="pointer"
-                              _hover={it.enabled ? { bg: "whiteAlpha.50" } : { bg: "#2f3650" }}
-                              transition="all 0.15s"
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              bg={it.enabled ? "transparent" : "rgba(255,255,255,0.06)"}
+                              border="1px solid rgba(255,255,255,0.08)"
+                              color={it.enabled ? "rgba(255,255,255,0.6)" : "white"}
+                              borderRadius="lg"
+                              _hover={{ bg: it.enabled ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.1)", color: "white" }}
                               onClick={() => {
                                 void (async () => {
                                   try {
@@ -1891,28 +1849,21 @@ const ModsModal: React.FC = () => {
                               title={t("common.toggle")}
                             >
                               {it.enabled ? t("common.disable") : t("common.enable")}
-                            </Box>
+                            </Button>
 
-                            <Box
-                              as="button"
-                              w={9}
-                              h={9}
-                              rounded="lg"
-                              border="1px solid"
-                              borderColor="#2a3146"
-                              bg="transparent"
+                            <IconButton
+                              aria-label={t("common.delete")}
+                              size="xs"
+                              variant="ghost"
                               color="red.300"
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="center"
-                              cursor="pointer"
-                              _hover={{ bg: "rgba(239,68,68,0.15)", color: "red.200" }}
-                              transition="all 0.15s"
+                              borderRadius="lg"
+                              border="1px solid rgba(255,255,255,0.06)"
+                              _hover={{ bg: "rgba(239,68,68,0.15)", color: "red.200", borderColor: "rgba(239,68,68,0.3)" }}
                               onClick={() => setDeleteModPrompt({ open: true, fileName: it.fileName })}
                               title={t("common.delete")}
                             >
-                              <IconTrash size={18} />
-                            </Box>
+                              <IconTrash size={15} />
+                            </IconButton>
                           </HStack>
                         </HStack>
                       );
@@ -1924,41 +1875,34 @@ const ModsModal: React.FC = () => {
               </Box>
             </Box>
           ) : (
-            <Box display="grid" style={{ gridTemplateColumns: "260px 1fr", gap: "16px" }} minH={0} h="full">
-              <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(31,37,56,0.7)" p={3} display="flex" flexDir="column" minH={0}>
+            <Box display="grid" gridTemplateColumns="260px 1fr" gap={4} minH={0} h="full">
+              <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)" p={3} display="flex" flexDir="column" minH={0}>
                 <Text fontSize="sm" color="white" fontWeight="semibold" mb={2}>{t("modsModal.profiles.title")}</Text>
 
                 <HStack gap={2} mb={3}>
-                  <input
+                  <Input
                     value={profileNameInput}
-                    onChange={(e) => setProfileNameInput(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProfileNameInput(e.target.value)}
                     placeholder={t("modsModal.profiles.namePlaceholder")}
-                    style={{
-                      flex: 1,
-                      padding: "8px 12px",
-                      borderRadius: "8px",
-                      background: "rgba(20,24,36,0.8)",
-                      border: "1px solid #2a3146",
-                      color: "white",
-                      fontSize: "0.875rem",
-                      outline: "none",
-                      fontFamily: "inherit",
-                    }}
-                  />
-                  <Box
-                    as="button"
-                    px={3}
-                    py={2}
-                    rounded="lg"
+                    size="sm"
+                    flex={1}
+                    bg="rgba(255,255,255,0.05)"
                     border="1px solid"
-                    borderColor="rgba(96,165,250,0.3)"
-                    style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
+                    borderColor="rgba(255,255,255,0.1)"
                     color="white"
-                    fontSize="sm"
+                    borderRadius="md"
+                    _placeholder={{ color: "rgba(255,255,255,0.28)" }}
+                    _focus={{ borderColor: "rgba(59,130,246,0.5)", boxShadow: "0 0 0 1px rgba(59,130,246,0.25)" }}
+                  />
+                  <Button
+                    size="sm"
+                    bg="rgba(37,99,235,0.25)"
+                    border="1px solid"
+                    borderColor="rgba(59,130,246,0.3)"
+                    color="white"
                     fontWeight="bold"
-                    cursor="pointer"
-                    _hover={{ boxShadow: "0 0 18px rgba(2,104,212,0.85)" }}
-                    transition="all 0.15s"
+                    borderRadius="md"
+                    _hover={{ bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" }}
                     onClick={() => {
                       void (async () => {
                         try {
@@ -1992,12 +1936,12 @@ const ModsModal: React.FC = () => {
                     title={t("common.save")}
                   >
                     {t("common.save")}
-                  </Box>
+                  </Button>
                 </HStack>
 
                 {profilesError ? <Text fontSize="xs" color="red.300" mb={2}>{profilesError}</Text> : null}
 
-                <Box flex={1} minH={0} overflowY="auto" style={{ overscrollBehavior: "contain" }} pr={1} rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(20,24,36,0.6)">
+                <Box flex={1} minH={0} overflowY="auto" style={{ overscrollBehavior: "contain" }} pr={1} rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)">
                   {profilesLoading ? (
                     <Text p={3} fontSize="xs" color="gray.300">{t("common.loading")}</Text>
                   ) : profiles.length ? (
@@ -2006,18 +1950,18 @@ const ModsModal: React.FC = () => {
                       const isVanilla = p.name.toLowerCase() === "vanilla";
                       return (
                         <Box
-                          as="button"
                           key={p.name}
                           w="full"
-                          textAlign="left"
                           px={3}
                           py={2}
                           borderBottom="1px solid"
                           borderColor="whiteAlpha.50"
                           cursor="pointer"
-                          bg={active ? "rgba(14,165,255,0.15)" : "transparent"}
-                          _hover={{ bg: active ? "rgba(14,165,255,0.15)" : "whiteAlpha.50" }}
+                          bg={active ? "rgba(255,255,255,0.08)" : "transparent"}
+                          _hover={{ bg: "rgba(255,255,255,0.08)" }}
                           transition="all 0.15s"
+                          role="button"
+                          tabIndex={0}
                           onClick={() => {
                             setSelectedProfileName(p.name);
                             setProfileNameInput(p.name);
@@ -2041,7 +1985,11 @@ const ModsModal: React.FC = () => {
                           }}
                         >
                           <Text fontSize="xs" color="white" truncate>{p.name}</Text>
-                          <Text fontSize="10px" color="gray.400">{t("modsModal.countMods", { count: p.mods?.length ?? 0 })}</Text>
+                          <HStack gap={1} mt={0.5}>
+                            <Badge size="xs" variant="subtle" colorPalette={active ? "blue" : "gray"} borderRadius="full" fontSize="10px">
+                              {t("modsModal.countMods", { count: p.mods?.length ?? 0 })}
+                            </Badge>
+                          </HStack>
                         </Box>
                       );
                     })
@@ -2051,19 +1999,15 @@ const ModsModal: React.FC = () => {
                 </Box>
 
                 <HStack mt={3} gap={2}>
-                  <Box
-                    as="button"
-                    px={3}
-                    py={2}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="#2a3146"
-                    bg="#23293a"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    bg="rgba(255,255,255,0.06)"
+                    border="1px solid rgba(255,255,255,0.08)"
                     color="white"
-                    cursor="pointer"
+                    borderRadius="md"
                     opacity={(!selectedProfileName || profilesLoading) ? 0.6 : 1}
-                    _hover={{ bg: "#2f3650" }}
-                    transition="all 0.15s"
+                    _hover={{ bg: "rgba(255,255,255,0.1)" }}
                     title={t("common.apply")}
                     onClick={() => {
                       void (async () => {
@@ -2080,21 +2024,17 @@ const ModsModal: React.FC = () => {
                     }}
                   >
                     {t("common.apply")}
-                  </Box>
+                  </Button>
 
-                  <Box
-                    as="button"
-                    px={3}
-                    py={2}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="#2a3146"
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     bg="transparent"
+                    border="1px solid rgba(255,255,255,0.08)"
                     color="red.300"
-                    cursor="pointer"
+                    borderRadius="md"
                     opacity={(!selectedProfileName || profilesLoading || selectedProfileName === "Vanilla") ? 0.6 : 1}
                     _hover={{ bg: "rgba(239,68,68,0.15)", color: "red.200" }}
-                    transition="all 0.15s"
                     title={t("common.delete")}
                     onClick={() => {
                       void (async () => {
@@ -2113,7 +2053,7 @@ const ModsModal: React.FC = () => {
                     }}
                   >
                     {t("common.delete")}
-                  </Box>
+                  </Button>
                 </HStack>
 
                 {importError ? <Text fontSize="xs" color="red.300" mt={2}>{importError}</Text> : null}
@@ -2132,28 +2072,23 @@ const ModsModal: React.FC = () => {
                 ) : null}
 
                 <Box mt={2} display="flex" alignItems="center" gap={2} position="relative">
-                  <Box
-                    as="button"
-                    px={3}
-                    py={2}
-                    rounded="lg"
+                  <Button
+                    size="sm"
+                    bg="rgba(37,99,235,0.25)"
                     border="1px solid"
-                    borderColor="rgba(96,165,250,0.3)"
-                    style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
+                    borderColor="rgba(59,130,246,0.3)"
                     color="white"
-                    fontSize="sm"
                     fontWeight="bold"
-                    cursor="pointer"
+                    borderRadius="md"
                     opacity={(importing || shareWorking) ? 0.6 : 1}
-                    _hover={{ boxShadow: "0 0 18px rgba(2,104,212,0.85)" }}
-                    transition="all 0.15s"
+                    _hover={{ bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" }}
                     onClick={() => {
                       setShareError(""); setShareNotice(""); setImportError(""); setImportNotice(""); setImportPromptError(""); setImportPromptText(""); setImportPromptOpen(true);
                     }}
                     title={t("modsModal.profiles.share.import")}
                   >
                     {t("modsModal.profiles.share.import")}
-                  </Box>
+                  </Button>
 
                   {importPromptOpen ? (
                     <>
@@ -2168,49 +2103,53 @@ const ModsModal: React.FC = () => {
                         maxW="92vw"
                         rounded="lg"
                         border="1px solid"
-                        borderColor="#2a3146"
-                        bg="rgba(20,24,36,0.6)"
+                        borderColor="rgba(255,255,255,0.1)"
+                        bg="rgba(13,17,32,0.97)"
+                        backdropFilter="blur(12px)"
                         p={3}
                         onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                       >
                         <HStack justify="space-between" gap={3} mb={2}>
                           <Text fontSize="xs" color="white" fontWeight="semibold">{t("modsModal.profiles.share.importPromptTitle")}</Text>
-                          <Box as="button" color="gray.300" cursor="pointer" _hover={{ color: "white" }} transition="colors 0.15s" fontSize="lg" lineHeight={1} onClick={() => { setImportPromptOpen(false); setImportPromptError(""); }} title={t("common.close")}>×</Box>
+                          <IconButton
+                            aria-label={t("common.close")}
+                            size="xs"
+                            variant="ghost"
+                            color="rgba(255,255,255,0.45)"
+                            borderRadius="md"
+                            _hover={{ color: "white", bg: "rgba(255,255,255,0.08)" }}
+                            onClick={() => { setImportPromptOpen(false); setImportPromptError(""); }}
+                          >
+                            ×
+                          </IconButton>
                         </HStack>
                         <Text fontSize="11px" color="gray.300" mb={2}>{t("modsModal.profiles.share.importPromptHint")}</Text>
                         {importPromptError ? <Text fontSize="xs" color="red.300" mb={2}>{importPromptError}</Text> : null}
-                        <textarea
+                        <Textarea
                           value={importPromptText}
-                          onChange={(e) => { setImportPromptText(e.target.value); if (importPromptError) setImportPromptError(""); }}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setImportPromptText(e.target.value); if (importPromptError) setImportPromptError(""); }}
                           placeholder={t("modsModal.profiles.share.importPromptPlaceholder")}
-                          style={{
-                            width: "100%",
-                            height: "92px",
-                            resize: "none",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            background: "rgba(15,20,34,0.7)",
-                            border: "1px solid #2a3146",
-                            color: "white",
-                            fontSize: "11px",
-                            fontFamily: "monospace",
-                            outline: "none",
-                          }}
+                          rows={4}
+                          resize="none"
+                          bg="rgba(255,255,255,0.05)"
+                          border="1px solid"
+                          borderColor="rgba(255,255,255,0.1)"
+                          color="white"
+                          fontSize="11px"
+                          fontFamily="monospace"
+                          _placeholder={{ color: "rgba(255,255,255,0.28)" }}
+                          _focus={{ borderColor: "rgba(59,130,246,0.5)", boxShadow: "0 0 0 1px rgba(59,130,246,0.25)" }}
                         />
                         <HStack mt={2} justify="flex-end" gap={2}>
-                          <Box
-                            as="button"
-                            px={3}
-                            py={2}
-                            rounded="lg"
-                            border="1px solid"
-                            borderColor="#2a3146"
-                            bg="transparent"
-                            color="gray.200"
-                            cursor="pointer"
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            bg="rgba(255,255,255,0.04)"
+                            border="1px solid rgba(255,255,255,0.08)"
+                            color="rgba(255,255,255,0.7)"
+                            borderRadius="md"
                             opacity={(importing || shareWorking) ? 0.6 : 1}
-                            _hover={{ bg: "whiteAlpha.50" }}
-                            transition="all 0.15s"
+                            _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                             onClick={() => {
                               void (async () => {
                                 setImportPromptError("");
@@ -2230,22 +2169,17 @@ const ModsModal: React.FC = () => {
                             title={t("modsModal.profiles.share.importFromClipboard")}
                           >
                             {t("modsModal.profiles.share.importFromClipboard")}
-                          </Box>
-                          <Box
-                            as="button"
-                            px={3}
-                            py={2}
-                            rounded="lg"
+                          </Button>
+                          <Button
+                            size="sm"
+                            bg="rgba(37,99,235,0.25)"
                             border="1px solid"
-                            borderColor="rgba(96,165,250,0.3)"
-                            style={{ background: "linear-gradient(90deg,#0268D4 0%,#02D4D4 100%)" }}
+                            borderColor="rgba(59,130,246,0.3)"
                             color="white"
-                            fontSize="sm"
                             fontWeight="bold"
-                            cursor="pointer"
+                            borderRadius="md"
                             opacity={(!importPromptText.trim() || importing || shareWorking) ? 0.6 : 1}
-                            _hover={{ boxShadow: "0 0 18px rgba(2,104,212,0.85)" }}
-                            transition="all 0.15s"
+                            _hover={{ bg: "rgba(37,99,235,0.4)", borderColor: "rgba(96,165,250,0.5)" }}
                             onClick={() => {
                               void (async () => {
                                 setImportPromptError("");
@@ -2263,7 +2197,7 @@ const ModsModal: React.FC = () => {
                             title={t("modsModal.profiles.share.importNow")}
                           >
                             {t("modsModal.profiles.share.importNow")}
-                          </Box>
+                          </Button>
                         </HStack>
                       </Box>
                     </>
@@ -2271,21 +2205,21 @@ const ModsModal: React.FC = () => {
                 </Box>
               </Box>
 
-              <Box rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(31,37,56,0.7)" p={3} display="flex" flexDir="column" minH={0}>
+              <Box rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)" p={3} display="flex" flexDir="column" minH={0}>
                 <HStack justify="space-between" gap={3} mb={2}>
                   <Box>
                     <Text fontSize="sm" color="white" fontWeight="semibold">{t("modsModal.profileMods")}</Text>
                     <Text fontSize="11px" color="gray.400">{t("modsModal.profiles.selectedCount", { count: profileSelectedMods.size })}</Text>
                   </Box>
                   <HStack gap={2}>
-                    <button onClick={() => setProfileSelectedMods(new Set(installedBaseNames))} disabled={installedLoading} title={t("common.selectAll") as string} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146", background: "#23293a", color: "white", cursor: "pointer", opacity: installedLoading ? 0.6 : 1, transition: "all 0.15s", fontFamily: "inherit", fontSize: "inherit" }}>{t("common.selectAll")}</button>
-                    <button onClick={() => setProfileSelectedMods(new Set())} disabled={installedLoading} title={t("common.selectNone") as string} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146", background: "transparent", color: "#d1d5db", cursor: "pointer", opacity: installedLoading ? 0.6 : 1, transition: "all 0.15s", fontFamily: "inherit", fontSize: "inherit" }}>{t("common.selectNone")}</button>
-                    <button onClick={() => void loadInstalled()} disabled={installedLoading} title={t("common.refresh") as string} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #2a3146", background: "#23293a", color: "white", cursor: "pointer", opacity: installedLoading ? 0.6 : 1, display: "flex", alignItems: "center", gap: "8px", transition: "all 0.15s", fontFamily: "inherit", fontSize: "inherit" }}><IconRefresh size={18} />{t("common.refresh")}</button>
-                    <Box as="button" px={3} py={2} rounded="lg" border="1px solid" borderColor="#2a3146" bg="transparent" color="gray.200" display="flex" alignItems="center" gap={2} cursor="pointer" _hover={{ bg: "whiteAlpha.50" }} transition="all 0.15s" onClick={() => void handleOpenModsFolder()} title={t("modsModal.installed.openFolder")}><IconFolderOpen size={18} />{t("modsModal.installed.openFolder")}</Box>
+                    <Button size="xs" variant="ghost" bg="rgba(255,255,255,0.06)" border="1px solid rgba(255,255,255,0.08)" color="white" borderRadius="md" opacity={installedLoading ? 0.6 : 1} _hover={{ bg: "rgba(255,255,255,0.1)" }} onClick={() => setProfileSelectedMods(new Set(installedBaseNames))} title={t("common.selectAll") as string}>{t("common.selectAll")}</Button>
+                    <Button size="xs" variant="ghost" bg="transparent" border="1px solid rgba(255,255,255,0.08)" color="rgba(209,213,219,1)" borderRadius="md" opacity={installedLoading ? 0.6 : 1} _hover={{ bg: "rgba(255,255,255,0.06)", color: "white" }} onClick={() => setProfileSelectedMods(new Set())} title={t("common.selectNone") as string}>{t("common.selectNone")}</Button>
+                    <Button size="xs" variant="ghost" bg="rgba(255,255,255,0.06)" border="1px solid rgba(255,255,255,0.08)" color="white" borderRadius="md" opacity={installedLoading ? 0.6 : 1} _hover={{ bg: "rgba(255,255,255,0.1)" }} onClick={() => void loadInstalled()} title={t("common.refresh") as string}><IconRefresh size={14} /><Box as="span" ml={1}>{t("common.refresh")}</Box></Button>
+                    <Button size="xs" variant="ghost" bg="transparent" border="1px solid rgba(255,255,255,0.08)" color="rgba(255,255,255,0.7)" borderRadius="md" _hover={{ bg: "rgba(255,255,255,0.06)", color: "white" }} onClick={() => void handleOpenModsFolder()} title={t("modsModal.installed.openFolder")}><IconFolderOpen size={14} /><Box as="span" ml={1}>{t("modsModal.installed.openFolder")}</Box></Button>
                   </HStack>
                 </HStack>
 
-                <Box flex={1} minH={0} overflowY="auto" style={{ overscrollBehavior: "contain" }} pr={1} rounded="lg" border="1px solid" borderColor="#2a3146" bg="rgba(20,24,36,0.6)">
+                <Box flex={1} minH={0} overflowY="auto" overscrollBehavior="contain" pr={1} rounded="lg" border="1px solid" borderColor="rgba(255,255,255,0.08)" bg="rgba(255,255,255,0.02)">
                   {installedLoading ? (
                     <Text p={3} fontSize="xs" color="gray.300">{t("common.loading")}</Text>
                   ) : profileModsUnionNames.length ? (
@@ -2332,19 +2266,14 @@ const ModsModal: React.FC = () => {
                           </Box>
 
                           {!isInstalled ? (
-                            <Box
-                              as="button"
-                              px={2.5}
-                              py={1.5}
-                              rounded="lg"
-                              border="1px solid"
-                              borderColor="#2a3146"
-                              bg="#23293a"
+                            <Button
+                              size="xs"
+                              bg="rgba(255,255,255,0.06)"
+                              border="1px solid rgba(255,255,255,0.08)"
                               color="white"
-                              cursor="pointer"
+                              borderRadius="md"
                               opacity={(!canAutoInstall || shareWorking || importing || installingId != null) ? 0.6 : 1}
-                              _hover={{ bg: "#2f3650" }}
-                              transition="all 0.15s"
+                              _hover={{ bg: "rgba(255,255,255,0.1)" }}
                               onClick={(e: React.MouseEvent) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -2375,19 +2304,22 @@ const ModsModal: React.FC = () => {
                               title={t("modsModal.profiles.install")}
                             >
                               {t("modsModal.profiles.install")}
-                            </Box>
+                            </Button>
                           ) : null}
 
-                          <input
+                          <Box
+                            as="input"
                             type="checkbox"
                             checked={checked}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               const next = new Set(profileSelectedMods);
                               if (e.target.checked) next.add(name);
                               else next.delete(name);
                               setProfileSelectedMods(next);
                             }}
-                            style={{ width: "16px", height: "16px", accentColor: "#0ea5ff" }}
+                            w="16px"
+                            h="16px"
+                            accentColor="#0ea5ff"
                           />
                         </Box>
                       );
@@ -2400,19 +2332,15 @@ const ModsModal: React.FC = () => {
                 <HStack mt={3} justify="space-between" gap={2} position="relative">
                   <Text fontSize="11px" color="gray.400">{t("modsModal.profiles.tip")}</Text>
 
-                  <Box
-                    as="button"
-                    px={2.5}
-                    py={1.5}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="#2a3146"
-                    bg="transparent"
-                    color="gray.200"
-                    cursor="pointer"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    bg="rgba(255,255,255,0.04)"
+                    border="1px solid rgba(255,255,255,0.08)"
+                    color="rgba(255,255,255,0.7)"
+                    borderRadius="md"
                     opacity={(!selectedProfileName || shareWorking || importing) ? 0.6 : 1}
-                    _hover={{ bg: "whiteAlpha.50" }}
-                    transition="all 0.15s"
+                    _hover={{ bg: "rgba(255,255,255,0.08)", color: "white" }}
                     onClick={() => {
                       setShareError(""); setShareNotice(""); setExportCode(""); setExportOpen(true);
                       void (async () => {
@@ -2476,7 +2404,7 @@ const ModsModal: React.FC = () => {
                     title={t("modsModal.profiles.share.export")}
                   >
                     {shareWorking ? t("common.working") : t("modsModal.profiles.share.export")}
-                  </Box>
+                  </Button>
 
                   {exportOpen ? (
                     <>
@@ -2491,54 +2419,57 @@ const ModsModal: React.FC = () => {
                         maxW="92vw"
                         rounded="lg"
                         border="1px solid"
-                        borderColor="#2a3146"
-                        bg="rgba(20,24,36,0.6)"
+                        borderColor="rgba(255,255,255,0.1)"
+                        bg="rgba(13,17,32,0.97)"
+                        backdropFilter="blur(12px)"
                         p={3}
                         onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
                       >
                         <HStack justify="space-between" gap={3} mb={2}>
                           <Text fontSize="xs" color="white" fontWeight="semibold">{t("modsModal.profiles.share.title")}</Text>
-                          <Box as="button" color="gray.300" cursor="pointer" _hover={{ color: "white" }} transition="colors 0.15s" fontSize="lg" lineHeight={1} onClick={() => setExportOpen(false)} title={t("common.close")}>×</Box>
+                          <IconButton
+                            aria-label={t("common.close")}
+                            size="xs"
+                            variant="ghost"
+                            color="rgba(255,255,255,0.45)"
+                            borderRadius="md"
+                            _hover={{ color: "white", bg: "rgba(255,255,255,0.08)" }}
+                            onClick={() => setExportOpen(false)}
+                          >
+                            ×
+                          </IconButton>
                         </HStack>
                         {shareError ? <Text fontSize="xs" color="red.300" mb={2}>{shareError}</Text> : null}
                         {shareNotice ? <Text fontSize="xs" color="gray.200" mb={2}>{shareNotice}</Text> : null}
                         <HStack justify="flex-end" gap={2} mb={2}>
-                          <Box
-                            as="button"
-                            px={3}
-                            py={2}
-                            rounded="lg"
-                            border="1px solid"
-                            borderColor="#2a3146"
-                            bg="transparent"
-                            color="gray.200"
-                            cursor="pointer"
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            bg="rgba(255,255,255,0.04)"
+                            border="1px solid rgba(255,255,255,0.08)"
+                            color="rgba(255,255,255,0.7)"
+                            borderRadius="md"
                             opacity={(!exportCode || shareWorking) ? 0.6 : 1}
-                            _hover={{ bg: "whiteAlpha.50" }}
-                            transition="all 0.15s"
+                            _hover={{ bg: "rgba(255,255,255,0.1)", color: "white" }}
                             onClick={() => { void (async () => { try { await copyToClipboard(exportCode); setShareNotice(t("modsModal.profiles.share.copied")); } catch { /* ignore */ } })(); }}
                             title={t("modsModal.profiles.share.copy")}
                           >
                             {t("modsModal.profiles.share.copy")}
-                          </Box>
+                          </Button>
                         </HStack>
-                        <textarea
+                        <Textarea
                           value={exportCode}
                           readOnly
                           placeholder={t("modsModal.profiles.share.codePlaceholder")}
-                          style={{
-                            width: "100%",
-                            height: "74px",
-                            resize: "none",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            background: "rgba(15,20,34,0.7)",
-                            border: "1px solid #2a3146",
-                            color: "white",
-                            fontSize: "11px",
-                            fontFamily: "monospace",
-                            outline: "none",
-                          }}
+                          rows={3}
+                          resize="none"
+                          bg="rgba(255,255,255,0.05)"
+                          border="1px solid"
+                          borderColor="rgba(255,255,255,0.1)"
+                          color="white"
+                          fontSize="11px"
+                          fontFamily="monospace"
+                          _placeholder={{ color: "rgba(255,255,255,0.28)" }}
                         />
                       </Box>
                     </>
@@ -2554,19 +2485,24 @@ const ModsModal: React.FC = () => {
         open={renameProfilePrompt.open}
         title={t("modsModal.profiles.rename.title")}
         message={
-          <div>
-            <div style={{ fontSize: "0.75rem", color: "#d1d5db", marginBottom: "8px" }}>
+          <Box>
+            <Text fontSize="xs" color="gray.300" mb={2}>
               {t("modsModal.profiles.rename.hint", { name: renameProfilePrompt.oldName })}
-            </div>
-            <input
+            </Text>
+            <Input
               value={renameProfileInput}
-              onChange={(e) => { setRenameProfileInput(e.target.value); if (renameProfileError) setRenameProfileError(""); }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setRenameProfileInput(e.target.value); if (renameProfileError) setRenameProfileError(""); }}
               placeholder={t("modsModal.profiles.rename.placeholder")}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146", color: "white", fontSize: "0.875rem", outline: "none" }}
+              w="full"
+              bg="whiteAlpha.50"
+              border="1px solid"
+              borderColor="whiteAlpha.100"
+              color="white"
+              fontSize="sm"
               autoFocus
             />
-            {renameProfileError ? <div style={{ fontSize: "11px", color: "#fc8181", marginTop: "8px" }}>{renameProfileError}</div> : null}
-          </div>
+            {renameProfileError ? <Text fontSize="11px" color="red.300" mt={2}>{renameProfileError}</Text> : null}
+          </Box>
         }
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
@@ -2610,21 +2546,21 @@ const ModsModal: React.FC = () => {
           const names = mods.map((m) => (m?.name || m?.fileName || (m?.modId ? `#${m.modId}` : "")) as string).filter(Boolean);
           const gvLabel = (pack.profile?.gameVersion?.label as string) || "";
           return (
-            <div>
-              <div style={{ fontSize: "0.875rem", color: "#e2e8f0" }}>
+            <Box>
+              <Text fontSize="sm" color="gray.200">
                 {t("modsModal.profiles.share.previewSummary", { name: String(pack.profile?.name || ""), count: names.length, gameVersion: gvLabel || "-" })}
-              </div>
-              <div style={{ marginTop: "12px", fontSize: "0.75rem", color: "#a0aec0" }}>{t("modsModal.profiles.share.previewMods", { count: names.length })}</div>
-              <div style={{ marginTop: "8px", maxHeight: "180px", overflowY: "auto", paddingRight: "4px", borderRadius: "8px", border: "1px solid #2a3146", background: "rgba(20,24,36,0.6)" }}>
+              </Text>
+              <Text mt={3} fontSize="xs" color="gray.400">{t("modsModal.profiles.share.previewMods", { count: names.length })}</Text>
+              <Box mt={2} maxH="180px" overflowY="auto" pr={1} rounded="lg" border="1px solid" borderColor="whiteAlpha.100" bg="whiteAlpha.50">
                 {names.length ? (
                   names.map((n, idx) => (
-                    <div key={`${idx}-${n}`} style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: "11px", color: "#e2e8f0" }}>{n}</div>
+                    <Box key={`${idx}-${n}`} px={3} py={2} borderBottom="1px solid" borderColor="whiteAlpha.50" fontSize="11px" color="gray.200">{n}</Box>
                   ))
                 ) : (
-                  <div style={{ padding: "8px 12px", fontSize: "11px", color: "#718096" }}>{t("modsModal.profiles.share.previewNoMods")}</div>
+                  <Text px={3} py={2} fontSize="11px" color="gray.500">{t("modsModal.profiles.share.previewNoMods")}</Text>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           );
         })()}
         confirmText={t("modsModal.profiles.share.continue")}
@@ -2669,11 +2605,11 @@ const ModsModal: React.FC = () => {
                     if (got && expected && got.toLowerCase() !== expected) {
                       const ok = await awaitIntegrityDecision(
                         t("modsModal.profiles.share.integrityTitle"),
-                        <div>
-                          <div style={{ fontSize: "0.875rem", color: "#e2e8f0" }}>{t("modsModal.profiles.share.integrityMismatch", { name })}</div>
-                          <div style={{ marginTop: "8px", fontSize: "11px", color: "#a0aec0", fontFamily: "monospace", wordBreak: "break-all" }}>{t("modsModal.profiles.share.integrityExpected", { hash: expected })}</div>
-                          <div style={{ marginTop: "4px", fontSize: "11px", color: "#a0aec0", fontFamily: "monospace", wordBreak: "break-all" }}>{t("modsModal.profiles.share.integrityGot", { hash: got })}</div>
-                        </div>,
+                        <Box>
+                          <Text fontSize="sm" color="gray.200">{t("modsModal.profiles.share.integrityMismatch", { name })}</Text>
+                          <Text mt={2} fontSize="11px" color="gray.400" fontFamily="mono" wordBreak="break-all">{t("modsModal.profiles.share.integrityExpected", { hash: expected })}</Text>
+                          <Text mt={1} fontSize="11px" color="gray.400" fontFamily="mono" wordBreak="break-all">{t("modsModal.profiles.share.integrityGot", { hash: got })}</Text>
+                        </Box>,
                       );
                       if (!ok) { errors.push(`${name}: hash mismatch`); break; }
                     }
@@ -2723,9 +2659,9 @@ const ModsModal: React.FC = () => {
         open={deleteModPrompt.open}
         title={t("modsModal.installed.deleteConfirmTitle")}
         message={
-          <div>
-            <div style={{ fontSize: "0.875rem", color: "#e2e8f0" }}>{t("modsModal.installed.deleteConfirmMsg", { name: deleteModPrompt.fileName })}</div>
-          </div>
+          <Box>
+            <Text fontSize="sm" color="gray.200">{t("modsModal.installed.deleteConfirmMsg", { name: deleteModPrompt.fileName })}</Text>
+          </Box>
         }
         confirmText={t("common.delete")}
         cancelText={t("common.cancel")}
@@ -2754,17 +2690,22 @@ const ModsModal: React.FC = () => {
         open={attachPrompt.open}
         title={t("modsModal.installed.attachToLauncher")}
         message={
-          <div>
-            <div style={{ fontSize: "0.75rem", color: "#e2e8f0", marginBottom: "8px" }}>{t("modsModal.installed.attachLinkLabel")}</div>
-            <input
+          <Box>
+            <Text fontSize="xs" color="gray.200" mb={2}>{t("modsModal.installed.attachLinkLabel")}</Text>
+            <Input
               value={attachLinkInput}
-              onChange={(e) => { const next = e.target.value; setAttachLinkInput(next); if (attachLinkError && isValidAttachLink(next)) setAttachLinkError(""); }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const next = e.target.value; setAttachLinkInput(next); if (attachLinkError && isValidAttachLink(next)) setAttachLinkError(""); }}
               placeholder={t("modsModal.installed.attachLinkPlaceholder")}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", background: "rgba(20,24,36,0.8)", border: "1px solid #2a3146", color: "white", fontSize: "0.875rem", outline: "none" }}
+              w="full"
+              bg="whiteAlpha.50"
+              border="1px solid"
+              borderColor="whiteAlpha.100"
+              color="white"
+              fontSize="sm"
             />
-            {attachLinkError ? <div style={{ fontSize: "11px", color: "#fc8181", marginTop: "8px" }}>{attachLinkError}</div> : null}
-            <div style={{ fontSize: "11px", color: "#718096", marginTop: "8px" }}>{t("modsModal.installed.attachLinkExample")}: {ATTACH_LINK_EXAMPLE}</div>
-          </div>
+            {attachLinkError ? <Text fontSize="11px" color="red.300" mt={2}>{attachLinkError}</Text> : null}
+            <Text fontSize="11px" color="gray.500" mt={2}>{t("modsModal.installed.attachLinkExample")}: {ATTACH_LINK_EXAMPLE}</Text>
+          </Box>
         }
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
@@ -2821,10 +2762,12 @@ const ModsModal: React.FC = () => {
             minW="180px"
             rounded="lg"
             border="1px solid"
-            borderColor="#2a3146"
-            bg="rgba(20,24,36,0.9)"
+            borderColor="rgba(255,255,255,0.08)"
+            bg="rgba(13,17,32,0.97)"
             shadow="2xl"
-            style={{ left: profileCtxMenu.x, top: profileCtxMenu.y }}
+            left={`${profileCtxMenu.x}px`}
+            top={`${profileCtxMenu.y}px`}
+            backdropFilter="blur(12px)"
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <Box
@@ -2857,4 +2800,4 @@ const ModsModal: React.FC = () => {
   );
 };
 
-export default ModsModal;
+export default ModsPanel;

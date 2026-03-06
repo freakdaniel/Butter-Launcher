@@ -2,9 +2,10 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { IconX } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, HStack, IconButton, Text } from "@chakra-ui/react";
+import { Button, HStack, IconButton, Text, Box } from "@chakra-ui/react";
+import { ModalBackdrop, ModalCard, GradientButton } from "./ui";
 
-interface ConfirmDialogProps {
+interface ConfirmModalProps {
   open: boolean;
   title: string;
   message: string | React.ReactNode;
@@ -14,7 +15,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
   open,
   title,
   message,
@@ -26,43 +27,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const { t } = useTranslation();
   const resolvedConfirmText = confirmText ?? t("common.confirm");
   const resolvedCancelText = cancelText ?? t("common.cancel");
-  const mouseDownOnBackdrop = React.useRef(false);
 
   if (!open) return null;
   if (typeof document === "undefined" || !document.body) return null;
 
   return createPortal(
-    <Box
-      className="glass-backdrop animate-fadeIn"
-      position="fixed"
-      inset={0}
-      zIndex={1000}
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      onMouseDown={(e: React.MouseEvent) => {
-        mouseDownOnBackdrop.current = e.target === e.currentTarget;
-      }}
-      onMouseUp={() => { mouseDownOnBackdrop.current = false; }}
-      onMouseLeave={() => { mouseDownOnBackdrop.current = false; }}
-      onClick={(e: React.MouseEvent) => {
-        if (mouseDownOnBackdrop.current && e.target === e.currentTarget) onCancel();
-        mouseDownOnBackdrop.current = false;
-      }}
-    >
-      <Box
-        className="animate-settings-in"
-        position="relative"
-        w="full"
-        maxW="md"
-        rounded="xl"
-        shadow="2xl"
-        bg="linear-gradient(to bottom, rgba(27,32,48,0.97), rgba(20,24,36,0.97))"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        p={6}
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
+    <ModalBackdrop onClose={onCancel}>
+      <ModalCard maxW="md">
         {/* Header */}
         <HStack justify="space-between" align="flex-start">
           <Text color="white" fontWeight="extrabold" fontSize="lg">{title}</Text>
@@ -96,21 +67,14 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           >
             {resolvedCancelText}
           </Button>
-          <Button
-            size="sm"
-            color="white"
-            fontWeight="bold"
-            style={{ background: "linear-gradient(90deg,#0268D4,#02D4D4)" }}
-            _hover={{ opacity: 0.9 }}
-            onClick={onConfirm}
-          >
+          <GradientButton size="sm" onClick={onConfirm}>
             {resolvedConfirmText}
-          </Button>
+          </GradientButton>
         </HStack>
-      </Box>
-    </Box>,
+      </ModalCard>
+    </ModalBackdrop>,
     document.body,
   );
 };
 
-export default ConfirmDialog;
+export default ConfirmModal;

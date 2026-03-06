@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, HStack, Input, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, HStack, IconButton, Input, Text, VStack } from "@chakra-ui/react";
+import { IconX } from "@tabler/icons-react";
+import { useTranslation } from "react-i18next";
 import { StorageService } from "../services/StorageService";
+import { ModalBackdrop, SectionLabel } from "./ui";
 
 const WS_URL = "wss://butter.lat/api/matcha/ws";
 const EMOJIS = ["😀", "😂", "🔥", "❤️", "👍", "😎", "😭", "👀"];
@@ -13,6 +16,7 @@ type Message = {
 };
 
 export default function Chat({ user, onClose }: { user: string; onClose: () => void }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [typingUser, setTypingUser] = useState<string | null>(null);
@@ -82,15 +86,7 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
   };
 
   return (
-    <Box
-      position="fixed"
-      inset={0}
-      bg="blackAlpha.700"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      zIndex={9999}
-    >
+    <ModalBackdrop onClose={onClose} zIndex={9999}>
       <Box
         w="720px"
         h="480px"
@@ -102,12 +98,13 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
         overflow="hidden"
         border="1px solid"
         borderColor="whiteAlpha.100"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Sidebar */}
         <Box w="208px" bg="rgba(15,23,42,1)" p={3} borderRight="1px solid" borderColor="whiteAlpha.100" display="flex" flexDir="column">
-          <Text fontSize="10px" fontWeight="bold" color="blue.400" mb={4} px={2} letterSpacing="widest" textTransform="uppercase">
-            Canales
-          </Text>
+          <Box mb={4} px={2}>
+            <SectionLabel>{t("chat.channels")}</SectionLabel>
+          </Box>
           <Button
             size="sm"
             justifyContent="flex-start"
@@ -119,13 +116,13 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
             mb={1}
             onClick={() => setCurrentChat("global")}
           >
-            🌍 Global Chat
+            🌍 {t("chat.globalChat")}
           </Button>
 
-          <Text fontSize="10px" fontWeight="bold" color="whiteAlpha.400" mt={4} mb={2} px={2} textTransform="uppercase">
-            Mensajes Directos
-          </Text>
-          <Box flex={1} overflowY="auto">
+          <Box mt={4} mb={2} px={2}>
+            <SectionLabel>{t("chat.directMessages")}</SectionLabel>
+          </Box>
+          <Box flex={1} overflowY="auto" className="dark-scrollbar">
             {onlineUsers.map((u) => (
               <Button
                 key={u}
@@ -160,13 +157,21 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
           >
             <Box>
               <Text fontWeight="bold">
-                {currentChat === "global" ? "🌍 Chat Global" : `👤 ${currentChat}`}
+                {currentChat === "global" ? `🌍 ${t("chat.globalChat")}` : `👤 ${currentChat}`}
               </Text>
-              <Text fontSize="10px" color="green.400">En línea</Text>
+              <Text fontSize="10px" color="green.400">{t("chat.online")}</Text>
             </Box>
-            <Button size="sm" variant="ghost" color="whiteAlpha.500" _hover={{ color: "white" }} onClick={onClose} fontSize="xl" p={1}>
-              ×
-            </Button>
+            <IconButton
+              aria-label={t("common.close")}
+              size="sm"
+              variant="ghost"
+              color="whiteAlpha.500"
+              _hover={{ color: "white", bg: "whiteAlpha.100" }}
+              rounded="full"
+              onClick={onClose}
+            >
+              <IconX size={18} />
+            </IconButton>
           </HStack>
 
           <Box flex={1} overflowY="auto" px={4} py={4} className="dark-scrollbar">
@@ -200,7 +205,7 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
               {typingUser && (
                 <Text fontSize="10px" fontStyle="italic" color="whiteAlpha.500"
                       style={{ animation: "pulse 1.5s infinite" }}>
-                  {typingUser} está escribiendo...
+                  {t("chat.typing", { user: typingUser })}
                 </Text>
               )}
               <div ref={bottomRef} />
@@ -211,16 +216,24 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
             {showEmojis && (
               <HStack gap={2} p={2} mb={2} bg="whiteAlpha.50" rounded="lg" border="1px solid" borderColor="whiteAlpha.50" overflowX="auto">
                 {EMOJIS.map((e) => (
-                  <Button key={e} variant="ghost" size="xs" p={1} onClick={() => setText((t) => t + e)}>
+                  <Button key={e} variant="ghost" size="xs" p={1} onClick={() => setText((prev) => prev + e)}>
                     {e}
                   </Button>
                 ))}
               </HStack>
             )}
             <HStack gap={3}>
-              <Button variant="ghost" size="sm" p={0} onClick={() => setShowEmojis(!showEmojis)} filter={showEmojis ? "none" : "grayscale(1)"} _hover={{ filter: "none" }} fontSize="xl">
+              <IconButton
+                aria-label={t("chat.emoji")}
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEmojis(!showEmojis)}
+                filter={showEmojis ? "none" : "grayscale(1)"}
+                _hover={{ filter: "none" }}
+                fontSize="xl"
+              >
                 😊
-              </Button>
+              </IconButton>
               <Input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -235,7 +248,7 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
                 fontSize="sm"
                 _placeholder={{ color: "whiteAlpha.400" }}
                 _focus={{ borderColor: "blue.500" }}
-                placeholder={`Escribe a ${currentChat}...`}
+                placeholder={t("chat.placeholder", { target: currentChat })}
               />
               <Button
                 bg="blue.600"
@@ -249,12 +262,12 @@ export default function Chat({ user, onClose }: { user: string; onClose: () => v
                 _active={{ transform: "scale(0.95)" }}
                 onClick={sendMessage}
               >
-                Enviar
+                {t("chat.send")}
               </Button>
             </HStack>
           </Box>
         </Box>
       </Box>
-    </Box>
+    </ModalBackdrop>
   );
 }

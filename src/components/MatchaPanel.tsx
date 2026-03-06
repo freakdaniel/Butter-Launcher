@@ -128,7 +128,7 @@ const sanitizeUnreadMap = (raw: any): Record<string, number> => {
   }
 };
 
-export default function FriendsMenu({
+export default function MatchaPanel({
   onClose,
   open,
   inline,
@@ -2758,7 +2758,7 @@ export default function FriendsMenu({
                       </Box>
                     );
                   })()}
-                </Box>
+                </Btn>
 
                 <Btn
                   type="button"
@@ -4790,7 +4790,7 @@ export default function FriendsMenu({
                                 </Box>
                               ) : null}
                             </HStack>
-                          </Box>
+                          </Btn>
                         );
                       })
                     )}

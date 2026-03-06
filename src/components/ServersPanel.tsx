@@ -10,6 +10,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
+import { ModalBackdrop } from "./ui";
 
 type ServerListItem = {
   id: string;
@@ -209,17 +210,7 @@ const PREVIEW_TOKEN_RE_TEST = /\{\{\s*preview\s*:\s*[^}]+?\s*\}\}/i;
 const normalizeDescriptionText = (v: string): string =>
   safeText(v).replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "\n");
 
-const imgPreviewStyle: React.CSSProperties = {
-  width: "468px",
-  maxWidth: "100%",
-  height: "120px",
-  borderRadius: "6px",
-  border: "1px solid rgba(255,255,255,0.1)",
-  background: "rgba(255,255,255,0.05)",
-  objectFit: "cover",
-  cursor: "zoom-in",
-  display: "block",
-};
+
 
 const renderDescriptionWithPreviews = (
   description: string,
@@ -248,24 +239,34 @@ const renderDescriptionWithPreviews = (
     const before = text.slice(lastIndex, start);
     if (before) {
       nodes.push(
-        <div key={`desc:text:${nodes.length}`} style={{ whiteSpace: "pre-wrap" }}>{before}</div>,
+        <Box key={`desc:text:${nodes.length}`} whiteSpace="pre-wrap">{before}</Box>,
       );
     }
     const url = keyRaw ? map.get(keyRaw.toLowerCase()) : undefined;
     if (url) {
       nodes.push(
-        <img
+        <Box
+          as="img"
           key={`desc:img:${nodes.length}`}
           src={url}
           alt={`${serverName} preview ${keyRaw}`}
-          style={imgPreviewStyle}
+          w="468px"
+          maxW="100%"
+          h="120px"
+          rounded="sm"
+          border="1px solid"
+          borderColor="whiteAlpha.100"
+          bg="whiteAlpha.50"
+          objectFit="cover"
+          cursor="zoom-in"
+          display="block"
           loading="lazy"
           onClick={() => onOpenImage?.(url, `${serverName} preview ${keyRaw}`)}
         />,
       );
     } else {
       nodes.push(
-        <div key={`desc:badtoken:${nodes.length}`} style={{ whiteSpace: "pre-wrap" }}>{m[0]}</div>,
+        <Box key={`desc:badtoken:${nodes.length}`} whiteSpace="pre-wrap">{m[0]}</Box>,
       );
     }
     lastIndex = end;
@@ -273,10 +274,10 @@ const renderDescriptionWithPreviews = (
   const tail = text.slice(lastIndex);
   if (tail) {
     nodes.push(
-      <div key={`desc:tail:${nodes.length}`} style={{ whiteSpace: "pre-wrap" }}>{tail}</div>,
+      <Box key={`desc:tail:${nodes.length}`} whiteSpace="pre-wrap">{tail}</Box>,
     );
   }
-  return <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>{nodes}</div>;
+  return <VStack gap={2} align="stretch">{nodes}</VStack>;
 };
 
 const getRecommendedNameChroma = (
@@ -332,7 +333,7 @@ const getServerPrimaryRgb = (s: ServerListItem): { r: number; g: number; b: numb
   return parseHexColor(s.nameColor);
 };
 
-const ServersModal: React.FC = () => {
+const ServersPanel: React.FC = () => {
   const { t } = useTranslation();
   const [imageViewer, setImageViewer] = useState<{
     open: boolean; src: string; alt?: string; zoomed: boolean;
@@ -543,20 +544,7 @@ const ServersModal: React.FC = () => {
     >
       {imageViewer.open
         ? createPortal(
-            <Box
-              position="fixed"
-              inset={0}
-              zIndex={10060}
-              className="glass-backdrop"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              p={6}
-              onClick={() => closeImageViewer()}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Image viewer"
-            >
+            <ModalBackdrop onClose={closeImageViewer} zIndex={10060}>
               <IconButton
                 aria-label={t("common.close")}
                 position="absolute"
@@ -580,39 +568,31 @@ const ServersModal: React.FC = () => {
                 overflow="auto"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
-                <img
+                <Box
+                  as="img"
                   src={imageViewer.src}
                   alt={imageViewer.alt || "Image"}
                   ref={imageViewerImgRef}
-                  style={
-                    imageViewer.zoomed
-                      ? {
-                          display: "block",
-                          borderRadius: "12px",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          background: "rgba(255,255,255,0.05)",
-                          boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
-                          width: imageViewerZoomDims ? `${imageViewerZoomDims.w}px` : "184vw",
-                          height: imageViewerZoomDims ? `${imageViewerZoomDims.h}px` : "auto",
-                          maxWidth: "none",
-                          maxHeight: "none",
-                          objectFit: "contain",
-                          cursor: "zoom-out",
-                          transition: "width 120ms ease, height 120ms ease",
-                        }
-                      : {
-                          display: "block",
-                          borderRadius: "12px",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          background: "rgba(255,255,255,0.05)",
-                          boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
-                          maxWidth: "92vw",
-                          maxHeight: "88vh",
-                          objectFit: "contain",
-                          cursor: "zoom-in",
-                          transition: "width 120ms ease, height 120ms ease",
-                        }
-                  }
+                  display="block"
+                  rounded="lg"
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  bg="whiteAlpha.50"
+                  shadow="2xl"
+                  objectFit="contain"
+                  cursor={imageViewer.zoomed ? "zoom-out" : "zoom-in"}
+                  transition="width 120ms ease, height 120ms ease"
+                  {...(imageViewer.zoomed
+                    ? {
+                        w: imageViewerZoomDims ? `${imageViewerZoomDims.w}px` : "184vw",
+                        h: imageViewerZoomDims ? `${imageViewerZoomDims.h}px` : "auto",
+                        maxW: "none",
+                        maxH: "none",
+                      }
+                    : {
+                        maxW: "92vw",
+                        maxH: "88vh",
+                      })}
                   onClick={() => {
                     setImageViewer((v) => {
                       if (!v.zoomed) {
@@ -630,7 +610,7 @@ const ServersModal: React.FC = () => {
                   }}
                 />
               </Box>
-            </Box>,
+            </ModalBackdrop>,
             document.body,
           )
         : null}
@@ -741,10 +721,19 @@ const ServersModal: React.FC = () => {
               </HStack>
 
               <VStack gap={2} align="center">
-                <img
+                <Box
+                  as="img"
                   src={selected.bannerUrl}
                   alt={selected.name}
-                  style={{ width: "468px", height: "60px", maxWidth: "100%", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", objectFit: "cover", cursor: "zoom-in" }}
+                  w="468px"
+                  h="60px"
+                  maxW="100%"
+                  rounded="sm"
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                  bg="whiteAlpha.50"
+                  objectFit="cover"
+                  cursor="zoom-in"
                   loading="lazy"
                   onClick={() => openImageViewer(selected.bannerUrl, selected.name)}
                 />
@@ -801,18 +790,27 @@ const ServersModal: React.FC = () => {
                       if (hasTokens) {
                         return renderDescriptionWithPreviews(normalized, selected.previews, selected.name, openImageViewer);
                       }
-                      return <div style={{ whiteSpace: "pre-wrap" }}>{normalized}</div>;
+                      return <Box whiteSpace="pre-wrap">{normalized}</Box>;
                     }
-                    return <div style={{ whiteSpace: "pre-wrap" }}>{t("serversModal.empty.noDescription")}</div>;
+                    return <Box whiteSpace="pre-wrap">{t("serversModal.empty.noDescription")}</Box>;
                   })()}
                   {!PREVIEW_TOKEN_RE_TEST.test(normalizeDescriptionText(selected.description || "")) && selected.previews?.length ? (
                     <HStack mt={2} gap={2} w="468px" maxW="full">
                       {selected.previews.slice(0, 3).map((p, i) => (
-                        <img
+                        <Box
+                          as="img"
                           key={`${selected.id}:preview:${p.key}:${i}`}
                           src={p.url}
                           alt={`${selected.name} preview ${p.key}`}
-                          style={{ flex: 1, height: "84px", maxWidth: "100%", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", objectFit: "cover", cursor: "zoom-in" }}
+                          flex={1}
+                          h="84px"
+                          maxW="100%"
+                          rounded="sm"
+                          border="1px solid"
+                          borderColor="whiteAlpha.100"
+                          bg="whiteAlpha.50"
+                          objectFit="cover"
+                          cursor="zoom-in"
                           loading="lazy"
                           onClick={() => openImageViewer(p.url, `${selected.name} preview ${p.key}`)}
                         />
@@ -897,10 +895,18 @@ const ServersModal: React.FC = () => {
                                     </Box>
                                   );
                                 })()}
-                                <img
+                                <Box
+                                  as="img"
                                   src={s.bannerUrl}
                                   alt={s.name}
-                                  style={{ width: "468px", height: "60px", maxWidth: "100%", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", objectFit: "cover" }}
+                                  w="468px"
+                                  h="60px"
+                                  maxW="100%"
+                                  rounded="sm"
+                                  border="1px solid"
+                                  borderColor="whiteAlpha.100"
+                                  bg="whiteAlpha.50"
+                                  objectFit="cover"
                                   loading="lazy"
                                 />
                                 <Text fontSize="11px" color="gray.300" fontFamily="mono">{s.ip}</Text>
@@ -968,4 +974,4 @@ const ServersModal: React.FC = () => {
   );
 };
 
-export default ServersModal;
+export default ServersPanel;

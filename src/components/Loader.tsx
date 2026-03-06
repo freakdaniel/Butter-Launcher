@@ -280,7 +280,7 @@ const Loader: React.FC = () => {
   }, []);
 
   return (
-    <div
+    <Box
       className="splash-root"
       style={{
         appRegion: "drag",
@@ -293,39 +293,53 @@ const Loader: React.FC = () => {
           position="absolute"
           inset={0}
           opacity={0.35}
-          style={{
-            backgroundImage: `url(${butterBg})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(1px)",
-          }}
+          backgroundImage={`url(${butterBg})`}
+          backgroundSize="cover"
+          backgroundPosition="center"
+          filter="blur(1px)"
         />
-        <div className="splash-vignette" style={{ position: "absolute", inset: 0 }} />
-        <div className="splash-aurora"   style={{ position: "absolute", inset: 0 }} />
+        <Box className="splash-vignette" position="absolute" inset={0} />
+        <Box className="splash-aurora" position="absolute" inset={0} />
       </Box>
 
       {/* Content */}
       <Box position="relative" w="min(520px, 86vw)" px={6}>
         {/* Logo ring */}
         <Box position="relative" mx="auto" w="240px" h="240px">
-          <div className="splash-ring"  style={{ position: "absolute", inset: 0, borderRadius: "9999px" }} />
-          <div className="splash-ring2" style={{ position: "absolute", inset: 0, borderRadius: "9999px" }} />
-          <div className="splash-glow"  style={{ position: "absolute", inset: 0, borderRadius: "9999px" }} />
-          <div className="splash-logo"  style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img
+          <Box className="splash-ring" position="absolute" inset={0} rounded="full" />
+          <Box className="splash-ring2" position="absolute" inset={0} rounded="full" />
+          <Box className="splash-glow" position="absolute" inset={0} rounded="full" />
+          <Box
+            className="splash-logo"
+            position="absolute"
+            inset={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Box
+              as="img"
               src={butterLogo}
               alt={t("splash.logoAlt")}
               draggable={false}
-              style={{ width: "220px", pointerEvents: "none", userSelect: "none" }}
+              w="220px"
+              pointerEvents="none"
+              userSelect="none"
             />
-          </div>
+          </Box>
         </Box>
 
         {/* Title */}
         <Box mt={6} textAlign="center">
-          <div className="splash-title" style={{ fontSize: "1.5rem", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          <Text
+            className="splash-title"
+            fontSize="1.5rem"
+            fontWeight={800}
+            letterSpacing="0.12em"
+            textTransform="uppercase"
+          >
             {t("splash.title")}
-          </div>
+          </Text>
           <Text mt={2} fontSize="sm" fontWeight="semibold" color="whiteAlpha.800">
             {t("splash.initializing")}
           </Text>
@@ -334,14 +348,14 @@ const Loader: React.FC = () => {
         {/* Progress bar */}
         <Box mt={6}>
           <Box h="8px" borderRadius="full" bg="whiteAlpha.100" overflow="hidden">
-            <div className="splash-bar" style={{ height: "100%", borderRadius: "9999px" }} />
+            <Box className="splash-bar" h="100%" rounded="full" />
           </Box>
           <Text mt={2} textAlign="center" fontSize="xs" fontWeight="semibold" color="whiteAlpha.600">
             {t("splash.preparing")}
           </Text>
         </Box>
       </Box>
-    </div>
+    </Box>
   );
 };
 
