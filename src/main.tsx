@@ -9,11 +9,13 @@ import "./i18n";
 
 import { GameContextProvider } from "./hooks/gameContext";
 import { UserContextProvider } from "./hooks/userContext";
+import MatchaBackground from "./components/MatchaBackground";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GameContextProvider>
       <UserContextProvider>
+        <MatchaBackground />
         <App />
       </UserContextProvider>
     </GameContextProvider>

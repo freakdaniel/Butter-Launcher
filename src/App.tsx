@@ -1,8 +1,10 @@
 import { useUserContext } from "./hooks/userContext";
+import { useGameContext } from "./hooks/gameContext";
 import Launcher from "./components/Launcher";
 import Login from "./components/Login";
 import Loader from "./components/Loader";
 import { useEffect, useRef, useState } from "react";
+import { customAlternativeLoginProvider } from "./utils/dynamicModules/customAlternativeLoginProvider";
 import LauncherUpdateModal, {
   LauncherUpdateInfo,
 } from "./components/LauncherUpdateModal";
@@ -64,6 +66,7 @@ const CRYPT_WARM_AT_MS = 1700;
 const CRYPT_HEART_AT_MS = 3000;
 
 const SUPPORT_TICKET_EASTER_KEY = "supportticket";
+const FORCEPATCH_EASTER_KEY = "forcepatch";
 const SUPPORT_TICKET_POLL_MS = 2500;
 const SUPPORT_TICKET_API_BASE =
   (import.meta as any).env?.VITE_SUPPORT_TICKET_API_BASE || "https://butter.lat";
@@ -213,22 +216,106 @@ type PrimeOriginalStyles = {
 
 export default function App() {
   const { ready, username, setUsername } = useUserContext();
+  const { forceOfflineServerPatchForSelectedBuild } = useGameContext();
   const { t } = useTranslation();
   const [showLoader, setShowLoader] = useState(true);
   const [fade, setFade] = useState(false);
+
+  const allowAlternative = customAlternativeLoginProvider.allowAlternative;
+
+  useEffect(() => {
+    if (!username) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const lock = await window.config?.getRuntimeGameLock?.();
+        if (cancelled) return;
+        if (!lock || (lock as any).ok !== true || (lock as any).active !== true) return;
+
+        const lockedType = (lock as any).accountType === "premium" ? "premium" : "custom";
+
+        const raw = (localStorage.getItem("accountType") || "").trim();
+        const storedType = raw === "premium" ? "premium" : raw ? "custom" : "";
+
+        if (!storedType || storedType === lockedType) return;
+
+        // If another instance has a game running under a different account type,
+        // force this instance back to Login so it can't operate under mismatched mode.
+        setUsername(null);
+        try {
+          localStorage.removeItem("accountType");
+        } catch {
+          // ignore
+        }
+        try {
+          window.dispatchEvent(new Event("accountType:changed"));
+        } catch {
+          // ignore
+        }
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [username, setUsername]);
 
   const hasValidAccountType = (() => {
     // Legacy upgrade guard: older versions had a stored username but no explicit account mode.
     // If we don't gate on this, the launcher can "time travel" into an authenticated mode by accident.
     try {
-      const raw = (localStorage.getItem("accountType") || "").trim();
+      let raw = (localStorage.getItem("accountType") || "").trim();
       // If we have some non-empty legacy value, normalize it to the non-official mode.
-      if (raw && raw !== "premium" && raw !== "custom") localStorage.setItem("accountType", "custom");
-      return raw === "premium" || raw === "custom";
+      if (raw && raw !== "premium" && raw !== "custom") {
+        raw = "custom";
+        localStorage.setItem("accountType", "custom");
+      }
+
+      if (raw === "premium") return true;
+      if (raw === "custom") return allowAlternative;
+      return false;
     } catch {
       return false;
     }
   })();
+
+  useEffect(() => {
+    if (!username) return;
+
+    // If a user upgrades/downgrades to a build without alternative login support,
+    // don't keep them "stuck" in a non-official mode.
+    try {
+      const raw = (localStorage.getItem("accountType") || "").trim();
+      const normalized = raw === "premium" ? "premium" : raw ? "custom" : "";
+      if (normalized !== "custom") return;
+      if (allowAlternative) return;
+
+      setUsername(null);
+
+      try {
+        localStorage.removeItem("accountType");
+      } catch {
+        // ignore
+      }
+
+      try {
+        localStorage.removeItem("customUUID");
+      } catch {
+        // ignore
+      }
+
+      try {
+        window.dispatchEvent(new Event("accountType:changed"));
+      } catch {
+        // ignore
+      }
+    } catch {
+      // ignore
+    }
+  }, [username, allowAlternative, setUsername]);
 
   useEffect(() => {
     if (!username) return;
@@ -1928,6 +2015,7 @@ export default function App() {
         LUNARKATSU_EASTER_KEY.length,
         PRIMESTO_EASTER_KEY.length,
         SUPPORT_TICKET_EASTER_KEY.length,
+        FORCEPATCH_EASTER_KEY.length,
       );
       if (buffer.length > maxLength) {
         buffer = buffer.slice(buffer.length - maxLength);
@@ -1991,6 +2079,11 @@ export default function App() {
         setSupportTicketPhase("waiting");
         setSupportTicketStatusText("Copy this code and send it to support.");
         setSupportTicketOpen(true);
+      }
+
+      if (buffer.endsWith(FORCEPATCH_EASTER_KEY)) {
+        buffer = "";
+        void forceOfflineServerPatchForSelectedBuild();
       }
     };
 
@@ -3530,7 +3623,7 @@ export default function App() {
               position: "absolute",
               inset: 0,
               zIndex: 10000,
-              pointerEvents: "all",
+              pointerEvents: fade ? "none" : "all",
               opacity: fade ? 0 : 1,
               transition: "opacity 1s",
             }}

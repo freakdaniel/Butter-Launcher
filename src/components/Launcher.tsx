@@ -9,6 +9,7 @@ import ServersModal from "./ServersModal";
 import WikiModal from "./WikiModal";
 import MatchaTermsModal from "./MatchaTermsModal";
 import FriendsMenu from "./FriendsMenu";
+import PatchNotesModal from "./PatchNotesModal";
 import settingsIcon from "../assets/settings.svg";
 import DiscordLogo from "../assets/discord.svg";
 import PatreonLogo from "../assets/patreon.png";
@@ -59,6 +60,15 @@ const HYTALE_FEED_URL =
 
 const HYTALE_FEED_IMAGE_BASE =
   "https://launcher.hytale.com/launcher-feed/release/";
+
+const normalizeExternalUrl = (raw: unknown): string | null => {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (!s) return null;
+  if (s.startsWith("http://")) return s.replace(/^http:\/\//i, "https://");
+  if (s.startsWith("https://")) return s;
+  if (s.startsWith("//")) return `https:${s}`;
+  return null;
+};
 
 const normalizeHytaleUrl = (raw: unknown): string | null => {
   const s = typeof raw === "string" ? raw.trim() : "";
@@ -451,6 +461,12 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const [hytaleFeedError, setHytaleFeedError] = useState<string>("");
   const [hytaleFeedItems, setHytaleFeedItems] = useState<HytaleFeedItem[]>([]);
   const hytaleFeedScrollRef = useRef<HTMLDivElement | null>(null);
+  const [patchNotesUrls, setPatchNotesUrls] = useState<
+    Partial<Record<VersionType, string>>
+  >({});
+  const [patchNotesOpen, setPatchNotesOpen] = useState(false);
+  const [patchNotesUrl, setPatchNotesUrl] = useState<string | null>(null);
+  const [patchNotesChannel, setPatchNotesChannel] = useState<VersionType | null>(null);
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [patchConfirmOpen, setPatchConfirmOpen] = useState(false);
   const [onlinePatchEnabled, setOnlinePatchEnabled] = useState(false);
@@ -476,25 +492,95 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const isPremium = accountType === "premium";
   const restrictVersionsUntilBuild1 = isCustom || isPremium;
 
+  const hasInstalledBaseBelow = (targetBuildIndex: number): boolean => {
+    const target = Number(targetBuildIndex);
+    if (!Number.isFinite(target) || target <= 1) return false;
+    return availableVersions.some(
+      (v) =>
+        !!v.installed &&
+        Number.isFinite(v.build_index) &&
+        v.build_index > 0 &&
+        v.build_index < target,
+    );
+  };
+
+  const isVersionLocked = (v: GameVersion): boolean => {
+    if (!restrictVersionsUntilBuild1) return false;
+    if (v.installed) return false;
+    if (v.build_index === 1) return false;
+    if (v.isLatest) return false;
+    if (hasInstalledBaseBelow(v.build_index)) return false;
+    return true;
+  };
+
   const latestVersion =
     availableVersions.length > 0 ? availableVersions[0] : null;
 
-  // If the user is in a logged-in mode, only allow selecting
-  // Latest + Build-1 until Build-1 is installed.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        // Patch notes URLs are controlled by the backend Version Manager.
+        // Fetch via main process to avoid CORS issues.
+        const manifestUrl = `${import.meta.env.VITE_REQUEST_VERSIONS_DETAILS_URL}`;
+        if (!manifestUrl) throw new Error("Missing versions manifest URL");
+
+        const status = await window.ipcRenderer.invoke("fetch:head", manifestUrl);
+        if (status !== 200) throw new Error(`Manifest unavailable (HTTP ${status})`);
+
+        const raw = await window.ipcRenderer.invoke("fetch:json", manifestUrl);
+
+        const releaseUrl = normalizeExternalUrl(
+          raw?.patch_notes?.release?.url ?? raw?.patchNotes?.release?.url,
+        );
+        const preReleaseUrl = normalizeExternalUrl(
+          raw?.patch_notes?.["pre-release"]?.url ??
+            raw?.patchNotes?.["pre-release"]?.url,
+        );
+
+        if (!cancelled) {
+          setPatchNotesUrls({
+            release: releaseUrl ?? undefined,
+            "pre-release": preReleaseUrl ?? undefined,
+          });
+        }
+      } catch {
+        if (!cancelled) setPatchNotesUrls({});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // If the user is in a logged-in mode, prevent selecting builds that cannot be downloaded.
+  // A build is selectable if it is installed, is Build-1, is Latest, or has an installed base below it.
   // This also prevents a persisted selection from re-selecting a locked build.
   useEffect(() => {
     if (!restrictVersionsUntilBuild1) return;
-    if (hasBuild1Installed) return;
     const current = availableVersions?.[selectedVersion] ?? null;
     if (!current) return;
-    // If it's already installed, allow it to stay selected.
-    if (current.installed) return;
-    if (current.build_index === 1 || current.isLatest) return;
+    if (!isVersionLocked(current)) return;
 
     const latestIdx = availableVersions.findIndex((v) => !!v.isLatest);
-    const fallbackIdx = latestIdx !== -1 ? latestIdx : 0;
-    if (fallbackIdx !== selectedVersion) setSelectedVersion(fallbackIdx);
-  }, [restrictVersionsUntilBuild1, hasBuild1Installed, availableVersions, selectedVersion, setSelectedVersion]);
+    const newestInstalledIdx = availableVersions.findIndex((v) => !!v.installed);
+    const build1Idx = availableVersions.findIndex((v) => v.build_index === 1);
+
+    const candidates = [latestIdx, newestInstalledIdx, build1Idx, 0].filter(
+      (i) => typeof i === "number" && i >= 0 && i < availableVersions.length,
+    ) as number[];
+
+    const fallbackIdx = candidates.find((i) => {
+      const v = availableVersions[i];
+      return v ? !isVersionLocked(v) : false;
+    });
+
+    if (typeof fallbackIdx === "number" && fallbackIdx !== selectedVersion) {
+      setSelectedVersion(fallbackIdx);
+    }
+  }, [restrictVersionsUntilBuild1, availableVersions, selectedVersion, setSelectedVersion]);
 
   useEffect(() => {
     if (!offlineMode) return;
@@ -695,6 +781,9 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
   const selectedLabel = selected
     ? selected.build_name?.trim() || `Build-${selected.build_index}`
     : "";
+
+  const selectedPatchNotesUrl =
+    selected && selected.isLatest ? patchNotesUrls[selected.type] : undefined;
 
   const patchAvailable =
     !!selected &&
@@ -927,14 +1016,7 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
       return;
     }
 
-    const allowLatestWithoutBuild1 = !!v.isLatest;
-    const locked =
-      restrictVersionsUntilBuild1 &&
-      !hasBuild1Installed &&
-      !v.installed &&
-      v.build_index !== 1 &&
-      !allowLatestWithoutBuild1;
-    if (locked) {
+    if (isVersionLocked(v)) {
       alert(t("launcher.version.requiresBuild1"));
       return;
     }
@@ -1004,6 +1086,26 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
 
     void (async () => {
       try {
+        try {
+          const lock = await window.config?.getRuntimeGameLock?.();
+          if (lock && (lock as any).ok === true && (lock as any).active === true) {
+            const accountType =
+              (lock as any).accountType === "premium"
+                ? t("runtimeLock.accountType.premium")
+                : t("runtimeLock.accountType.custom");
+            const games = typeof (lock as any).games === "number" ? (lock as any).games : 1;
+            alert(
+              t("runtimeLock.logoutBlocked", {
+                accountType,
+                count: games,
+              }),
+            );
+            return;
+          }
+        } catch {
+          // ignore
+        }
+
         const ok = await disableOnlinePatchAndWait();
         if (!ok) return;
         onLogout();
@@ -1144,13 +1246,7 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                       ? ` • ${t("launcher.version.latest")}`
                       : "";
                   const isSelected = selectedVersion === idx;
-                  const allowLatestWithoutBuild1 = !!v.isLatest;
-                  const isLocked =
-                    restrictVersionsUntilBuild1 &&
-                    !hasBuild1Installed &&
-                    !v.installed &&
-                    v.build_index !== 1 &&
-                    !allowLatestWithoutBuild1;
+                  const isLocked = isVersionLocked(v);
                   const isRunningBuild =
                     !!runningVersion &&
                     gameLaunched &&
@@ -1775,6 +1871,7 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                                 assetsZipPath,
                                 authMode: hostServerAuthMode,
                                 noAot: advNoAotEnabled,
+                                acceptEarlyPlugins: advEarlyPluginsEnabled,
                                 ramMinGb,
                                 ramMaxGb,
                                 customJvmArgs: advCustomJvmArgs.trim() || null,
@@ -2085,6 +2182,13 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
       <MatchaTermsModal
         open={matchaTermsOpen}
         onClose={() => setMatchaTermsOpen(false)}
+      />
+
+      <PatchNotesModal
+        open={patchNotesOpen}
+        markdownUrl={patchNotesUrl}
+        channel={patchNotesChannel}
+        onClose={() => setPatchNotesOpen(false)}
       />
 
       <ConfirmModal
@@ -2406,21 +2510,37 @@ const Launcher: React.FC<{ onLogout?: () => void }> = ({ onLogout }) => {
                   </button>
                 )
               ) : (
-                <button
-                  className={cn(
-                    "min-w-52 bg-linear-to-r from-[#0268D4] to-[#02D4D4] text-white text-xl font-bold px-12 py-3 rounded-lg shadow-lg hover:scale-105 transition disabled:opacity-50",
-                    !availableVersions[selectedVersion]?.installed &&
-                      "animate-tinyGlow",
-                  )}
-                  onClick={handleLaunch}
-                  disabled={launching || gameLaunched}
-                >
-                  {availableVersions[selectedVersion]?.installed
-                    ? gameLaunched
-                      ? t("launcher.updates.running")
-                      : t("launcher.updates.play")
-                    : t("launcher.updates.install")}
-                </button>
+                <div className="relative inline-flex items-center justify-center">
+                  <button
+                    className={cn(
+                      "min-w-52 bg-linear-to-r from-[#0268D4] to-[#02D4D4] text-white text-xl font-bold px-12 py-3 rounded-lg shadow-lg hover:scale-105 transition disabled:opacity-50",
+                      !availableVersions[selectedVersion]?.installed &&
+                        "animate-tinyGlow",
+                    )}
+                    onClick={handleLaunch}
+                    disabled={launching || gameLaunched}
+                  >
+                    {availableVersions[selectedVersion]?.installed
+                      ? gameLaunched
+                        ? t("launcher.updates.running")
+                        : t("launcher.updates.play")
+                      : t("launcher.updates.install")}
+                  </button>
+
+                  {selectedPatchNotesUrl ? (
+                    <button
+                      type="button"
+                      className="absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] z-10 text-[11px] font-semibold px-0 py-0 bg-transparent text-white/70 hover:text-cyan-300 underline underline-offset-2 transition whitespace-nowrap"
+                      onClick={() => {
+                        setPatchNotesUrl(selectedPatchNotesUrl);
+                        setPatchNotesChannel(selected?.type ?? null);
+                        setPatchNotesOpen(true);
+                      }}
+                    >
+                      {t("launcher.patchNotes.button")}
+                    </button>
+                  ) : null}
+                </div>
               )
             )}
 

@@ -30,6 +30,10 @@ declare namespace NodeJS {
 interface Window {
   ipcRenderer: import("electron").IpcRenderer;
   config: {
+    getRuntimeGameLock: () => Promise<
+      | { ok: true; active: boolean; accountType: "premium" | "custom" | null; games: number }
+      | { ok: false; active: false; accountType: null; games: 0 }
+    >;
     OS: NodeJS.Platform;
     ARCH: NodeJS.Architecture;
     getDefaultGameDirectory: () => Promise<string>;
@@ -111,6 +115,11 @@ interface Window {
       | { ok: false; error: string }
     >;
 
+    offlineServerJwksPatchForce: (payload: { gameDir: string; version: GameVersion }) => Promise<
+      | { ok: true; result: "noop" | "applied" | "restored" | "skipped" }
+      | { ok: false; error: string }
+    >;
+
     premiumStatus: () => Promise<
       | { ok: true; loggedIn: boolean; profile: { displayName: string; sub?: string } | null; error: null }
       | { ok: false; loggedIn: false; profile: null; error: string }
@@ -156,6 +165,7 @@ interface Window {
         assetsZipPath?: string | null;
         authMode?: "offline" | "authenticated" | "insecure";
         noAot?: boolean;
+        acceptEarlyPlugins?: boolean;
         ramMinGb?: number | null;
         ramMaxGb?: number | null;
         customJvmArgs?: string | null;
