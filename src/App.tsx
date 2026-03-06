@@ -448,7 +448,9 @@ export default function App() {
       try {
         const res = await window.config.backgroundGet();
         if (res?.ok) {
-          setBgType(res.backgroundType || "none");
+          const rawType = typeof res.backgroundType === "string" ? res.backgroundType : "";
+          const nextType = rawType === "image" || rawType === "video" ? rawType : "none";
+          setBgType(nextType);
           setBgPath(res.backgroundPath || "");
         }
       } catch {
